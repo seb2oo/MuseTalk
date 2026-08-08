@@ -1,9 +1,11 @@
 1 : Utilsier le fichier "Dockerfile" pour créer une image avec docker-desktop par exemple :
 
-Donc faire un git clone de https://github.com/seb2oo/MuseTalk sur son PC et ensuite faire :
+Donc faire un git clone de https://github.com/seb2oo/MuseTalk sur son PC (pas besoin si on developpe deja en local "donc moi") et ensuite faire :
 docker build -f docker/Dockerfile -t seb2oo/musetalk_projectv4 .
 """
 docker build -f docker/Dockerfile -t (shouldBeYourUserNameOnDockerHub)/(shouldBeYourProjectNameOnDockerHub) .
+ou
+docker build --progress=plain -f docker/Dockerfile -t seb2oo/musetalk_projectv4 . --> Pour voir les étapes plus clairement
 """
 
 2 : Pusher cette image sous docker-hub
@@ -55,4 +57,8 @@ et tester directement.
 
 PS : Ceci est un exemple car cette branch sert à la mise en place du docker et une fois fonctionnelle, on ne fait plus aucun changement.
 Ce sera par exemple la branch tuning qui necessitera des changement comme par exemple (chagement d'inputs ou autres)
+***
+
+***
+use cherry pick instead of merge to get a special commit !
 ***

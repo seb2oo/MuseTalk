@@ -88,14 +88,15 @@ git commit -m "Add development documentation"
 git push -u origin main (use this only for the first time : -u origin main in order to "point" the current branch we are working one...)
 
 ps: This readme is evolving with the project, sometimes it should be push with commit "updateReadme" but is not forcely necessary
+ps : git switch branchName, avant de faire un add/commit/push..
 
-1 : Créer le dossier plus haut et ses fichiers internes !
+1 : Créer le dossier plus haut et ses fichiers internes ! (aurait pu être fait dans la branch directement...)
 
-2 :
+2 : (crée la branch et se place dans la branch...)
 git checkout -b "docker-optimisation"
 git commit --allow-empty -m "Create docker-optimisation branch"
 
-3 :
+3 : (si on add docker dans une branche spécifique alors il disparaitra de la branch main a moins qu'on l'aille aussi ajouter a main )
 git add docker/
 git commit -m "Add docker setup empty files"
 git push -u origin docker-optimisation
