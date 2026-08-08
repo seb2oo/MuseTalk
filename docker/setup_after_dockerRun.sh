@@ -16,7 +16,7 @@ echo ""
 echo "Cloning MuseTalk repository..."
 
 if [ ! -d "/workspace/MuseTalk/.git" ]; then
-    git clone https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
+    git clone --branch docker-optimisation https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
 else
     echo "MuseTalk repository already exists."
 fi
