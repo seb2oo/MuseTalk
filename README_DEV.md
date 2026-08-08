@@ -81,23 +81,30 @@ otherBranch
     └── README.md
 etc..
 
-0 : Créer le dossier plus haut et ses fichiers internes !
 
-1 :
+0 :
 git add README_DEV.md
 git commit -m "Add development documentation"
 git push -u origin main (use this only for the first time : -u origin main in order to "point" the current branch we are working one...)
 
+ps: This readme is evolving with the project, sometimes it should be push with commit "updateReadme" but is not forcely necessary
+
+1 : Créer le dossier plus haut et ses fichiers internes !
+
 2 :
-git checkout -b Docker Optimisation
-git commit --allow-empty -m "Create Docker Optimisation branch"
+git checkout -b "docker-optimisation"
+git commit --allow-empty -m "Create docker-optimisation branch"
 
 3 :
-git add docker/README_DEV_Docker Optimisation_branch.md
-git commit -m "README_DEV_Docker Optimisation_branch.md documentation"
-git push -u origin Docker Optimisation
+git add docker/
+git commit -m "Add docker setup empty files"
+git push -u origin docker-optimisation
+
+ps : here exemple for single file : git add docker/README_DEV_Docker Optimisation_branch.md
 
 X:
 look the projet commit and label to understand what was done ! 
 
-...
+
+
+AT THE END : MAKE THIS README ON THE MARDOWN FORMAT
