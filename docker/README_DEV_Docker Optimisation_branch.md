@@ -6,10 +6,12 @@ docker build -f docker/Dockerfile -t seb2oo/musetalk_projectv4 .
 docker build -f docker/Dockerfile -t (shouldBeYourUserNameOnDockerHub)/(shouldBeYourProjectNameOnDockerHub) .
 ou
 docker build --progress=plain -f docker/Dockerfile -t seb2oo/musetalk_projectv4 . --> Pour voir les étapes plus clairement
+ps: si on modifie le dockerfile ou autre, pas besoin de supprimer l'image on va ré-ecrire dessus !
 """
 
 2 : Pusher cette image sous docker-hub
 docker push seb2oo/musetalk_projectv4:latest
+ps : mettre un autre tag que latest si je repousse le projet V4 mais que je veux garder l'ancienne version V4 ! Sinon sera remplacé
 
 3 : récuperer cette image avec RunPod et créer un pod avec ces paramètres là : 
 
