@@ -1,4 +1,5 @@
 cd D:\Dev\04_MuseTalkImprovement\MuseTalk
+rm -rf /workspace/MuseTalk
 
 1 : Utilsier le fichier "Dockerfile" pour créer une image avec docker-desktop par exemple :
 
@@ -33,6 +34,8 @@ RTX A 5000
 - cd /workspace/MuseTalk
 pip install huggingface_hub==0.30.2 (Car le docker file de l'époque contenait une version non compatible et j'ai pas envie de refaire un dockerfile..)
 
+git clone --branch docker-optimisation https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
+pip install --no-cache-dir "huggingface_hub[cli]==0.30.2" --> A Faire au cas ou... car on ne las pas mit dans l'image docker de base ..
 bash /workspace/MuseTalk/docker/setup_after_dockerRun.sh
 
 **** 

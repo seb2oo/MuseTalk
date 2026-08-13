@@ -37,7 +37,7 @@ echo "=========================================="
 echo "Downloading MuseTalk models..."
 echo "=========================================="
 
-hf download TMElyralab/MuseTalk \
+huggingface-cli download TMElyralab/MuseTalk \
     --local-dir "${MODELS_DIR}"
 
 # ----------------------------------------------------------
@@ -49,11 +49,11 @@ echo "=========================================="
 echo "Downloading SD VAE..."
 echo "=========================================="
 
-hf download stabilityai/sd-vae-ft-mse \
+huggingface-cli download stabilityai/sd-vae-ft-mse \
     config.json \
     --local-dir "${MODELS_DIR}/sd-vae"
 
-hf download stabilityai/sd-vae-ft-mse \
+huggingface-cli download stabilityai/sd-vae-ft-mse \
     diffusion_pytorch_model.bin \
     --local-dir "${MODELS_DIR}/sd-vae"
 
@@ -66,15 +66,15 @@ echo "=========================================="
 echo "Downloading Whisper..."
 echo "=========================================="
 
-hf download openai/whisper-tiny \
+huggingface-cli download openai/whisper-tiny \
     config.json \
     --local-dir "${MODELS_DIR}/whisper"
 
-hf download openai/whisper-tiny \
+huggingface-cli download openai/whisper-tiny \
     pytorch_model.bin \
     --local-dir "${MODELS_DIR}/whisper"
 
-hf download openai/whisper-tiny \
+huggingface-cli download openai/whisper-tiny \
     preprocessor_config.json \
     --local-dir "${MODELS_DIR}/whisper"
 
@@ -87,7 +87,7 @@ echo "=========================================="
 echo "Downloading DWPose..."
 echo "=========================================="
 
-hf download yzd-v/DWPose \
+huggingface-cli download yzd-v/DWPose \
     --local-dir "${MODELS_DIR}/dwpose" \
     --include dw-ll_ucoco_384.pth
 
@@ -100,7 +100,7 @@ echo "=========================================="
 echo "Downloading LatentSync..."
 echo "=========================================="
 
-hf download ByteDance/LatentSync \
+huggingface-cli download ByteDance/LatentSync \
     --local-dir "${MODELS_DIR}/syncnet" \
     --include latentsync_syncnet.pt
 
@@ -113,11 +113,11 @@ echo "=========================================="
 echo "Downloading face-parse-bisent..."
 echo "=========================================="
 
-hf download ManyOtherFunctions/face-parse-bisent \
+huggingface-cli download ManyOtherFunctions/face-parse-bisent \
     79999_iter.pth \
     --local-dir "${MODELS_DIR}/face-parse-bisent"
 
-hf download ManyOtherFunctions/face-parse-bisent \
+huggingface-cli download ManyOtherFunctions/face-parse-bisent \
     resnet18-5c106cde.pth \
     --local-dir "${MODELS_DIR}/face-parse-bisent"
 

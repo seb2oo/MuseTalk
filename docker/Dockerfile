@@ -46,6 +46,8 @@ COPY requirements.txt /workspace/requirements.txt
 
 RUN pip install -r /workspace/requirements.txt
 
+RUN pip install --no-cache-dir "huggingface_hub[cli]==0.30.2"
+
 # ----------------------------------------------------------
 # OpenMIM + dépendances OpenMMLab
 # ----------------------------------------------------------
