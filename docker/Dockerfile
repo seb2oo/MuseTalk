@@ -21,11 +21,13 @@ RUN apt-get update && \
         xz-utils \
         libgl1 \
         libglib2.0-0 \
-        tzdata && \
+        tzdata \
+        tree && \
     rm -rf /var/lib/apt/lists/*
 
+
 # ----------------------------------------------------------
-# Installation du FFmpeg officiel
+# Installation de FFmpeg
 # ----------------------------------------------------------
 
 RUN wget -O ffmpeg.tar.xz \
@@ -37,16 +39,16 @@ ENV FFMPEG_PATH=/workspace/ffmpeg-n7.1-latest-linux64-gpl-7.1
 ENV PATH=${FFMPEG_PATH}/bin:${PATH}
 
 # ----------------------------------------------------------
-# Requirements
+# Requirements Python
 # ----------------------------------------------------------
 
 COPY requirements.txt /workspace/requirements.txt
 
-# ----------------------------------------------------------
-# Dépendances Python
-# ----------------------------------------------------------
+RUN pip install -r /workspace/requirements.txt
 
-RUN pip install -r requirements.txt
+# ----------------------------------------------------------
+# OpenMIM + dépendances OpenMMLab
+# ----------------------------------------------------------
 
 RUN pip install --no-cache-dir -U openmim
 
@@ -58,30 +60,19 @@ RUN mim install "mmdet==3.1.0"
 
 RUN mim install "mmpose==1.1.0"
 
-# Hugging Face CLI
-RUN pip install --no-cache-dir -U huggingface_hub
-
 # ----------------------------------------------------------
-# Scripts de préparation
+# Vérification de l'environnement
 # ----------------------------------------------------------
 
-COPY docker/setup_after_dockerRun.sh /workspace/setup_after_dockerRun.sh
-COPY docker/download_models.sh /workspace/download_models.sh
-COPY docker/verify_install.sh /workspace/verify_install.sh
-
-RUN chmod +x /workspace/setup_after_dockerRun.sh \
-             /workspace/download_models.sh \
-             /workspace/verify_install.sh
-
-# ----------------------------------------------------------
-# Vérifications de l'environnement Docker
-# ----------------------------------------------------------
-
-RUN which ffmpeg
-
-RUN ffmpeg -version
-
-RUN ffmpeg -encoders | grep libx264
+RUN echo "========== Python ==========" && \
+    python --version && \
+    echo "========== PyTorch ==========" && \
+    python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA available:', torch.cuda.is_available()); print('CUDA version:', torch.version.cuda)" && \
+    echo "========== FFmpeg ==========" && \
+    which ffmpeg && \
+    ffmpeg -version && \
+    echo "========== H264 ==========" && \
+    ffmpeg -encoders | grep libx264
 
 # ----------------------------------------------------------
 # Démarrage

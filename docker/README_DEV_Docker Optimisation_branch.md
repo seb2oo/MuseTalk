@@ -1,3 +1,5 @@
+cd D:\Dev\04_MuseTalkImprovement\MuseTalk
+
 1 : Utilsier le fichier "Dockerfile" pour créer une image avec docker-desktop par exemple :
 
 Donc faire un git clone de https://github.com/seb2oo/MuseTalk sur son PC (pas besoin si on developpe deja en local "donc moi") et ensuite faire :
@@ -29,6 +31,42 @@ RTX A 5000
 4 : Une fois dans le docker qui tourne, il faudra lancer ces commandes la : 
 - bash /workspace/setup_after_dockerRun.sh
 - cd /workspace/MuseTalk
+pip install huggingface_hub==0.30.2 (Car le docker file de l'époque contenait une version non compatible et j'ai pas envie de refaire un dockerfile..)
+
+bash /workspace/MuseTalk/docker/setup_after_dockerRun.sh
+
+**** 
+CETTE PARTIE LA NE FAIT PAS PARTIE DE DOCKER SPéCIFIQUEMENT ! MAIS ELLE ME PERMET DE CHANGER RAPIDEMENT LES INPUTS (AUDIO,IMAGE,RéFéRENCE) AFIN DE FAIRE DES TEST! et je ne voulais pas créer une branche spécifique pour ce "petit" test
+
+Attention, ici il faudra encore faire ces modifications la (en local): 
+- Il faudra mettre dans ce répértoire "MuseTalk\data\audio", ceci : seb_audio.wav
+- Il faudra mettre dans ce répértoire "MuseTalk\data\video", ceci : seb_image.png
+- Il faudra mettre dans ce répértoire "MuseTalk\configs\inference\test.yaml", ceci : 
+task_0:
+ video_path: "data/video/seb_image.png"
+ audio_path: "data/audio/seb_audio.wav"
+- Il faudra aussi créer ce répértoire : "MuseTalk\results\test"
+Attention ça fonctionne dans mon cas car le docker est créer avec mon github (setup_after_dockerRun.sh fait mon git clone) ! 
+
+(changement locales envoyés sur gitHub)
+git status
+git add .
+git status
+git commit -m "changement d'inputs"
+git push -u origin docker-optimisation
+
+(récupération de ces changement depuis runpod)
+cd /workspace/MuseTalk
+git fetch origin
+git checkout docker-optimisation
+git pull origin docker-optimisation
+
+(vérifications)
+git branch
+git status
+
+
+
 
 time python -m scripts.inference \
     --inference_config configs/inference/test.yaml \
@@ -36,6 +74,10 @@ time python -m scripts.inference \
     --unet_model_path models/musetalkV15/unet.pth \
     --unet_config models/musetalkV15/musetalk.json \
     --version v15
+
+le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)
+****
+
 
 ***
 Et par la suite si je modifie ceci :
