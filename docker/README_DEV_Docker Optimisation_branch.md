@@ -65,7 +65,7 @@ git pull origin docker-optimisation
 git branch
 git status
 
-
+cd MuseTalk
 time python -m scripts.inference \
     --inference_config configs/inference/test.yaml \
     --result_dir results/test \

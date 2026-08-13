@@ -161,6 +161,7 @@ def main(args):
 
             # Extract audio features
             whisper_input_features, librosa_length = audio_processor.get_audio_feature(audio_path)
+            log_time(f"after : get_audio_feature, task_nb = {task_nb}")
             whisper_chunks = audio_processor.get_whisper_chunk(
                 whisper_input_features, 
                 device, 
@@ -171,7 +172,7 @@ def main(args):
                 audio_padding_length_left=args.audio_padding_length_left,
                 audio_padding_length_right=args.audio_padding_length_right,
             )
-            log_time(f"after : Extract audio features, task_nb = {task_nb}")
+            log_time(f"after : get_whisper_chunk, task_nb = {task_nb}")
             
             # Preprocess input images
             if os.path.exists(crop_coord_save_path) and args.use_saved_coord:
@@ -238,6 +239,8 @@ def main(args):
             
             # Pad generated images to original video size
             print("Padding generated images to original video size")
+            blend_time = 0
+            write_time = 0
             for i, res_frame in enumerate(tqdm(res_frame_list)):
                 bbox = coord_list_cycle[i%(len(coord_list_cycle))]
                 ori_frame = copy.deepcopy(frame_list_cycle[i%(len(frame_list_cycle))])
@@ -252,11 +255,18 @@ def main(args):
                 
                 # Merge results with version-specific parameters
                 if args.version == "v15":
+                    t = time.perf_counter()
                     combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], mode=args.parsing_mode, fp=fp)
+                    blend_time += time.perf_counter() - t
                 else:
                     combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], fp=fp)
+
+                t = time.perf_counter()
                 cv2.imwrite(f"{result_img_save_path}/{str(i).zfill(8)}.png", combine_frame)
+                write_time += time.perf_counter() - t
             log_time(f"after : Pad generated images to original video size, task_nb = {task_nb}")
+            print(f"[TIMER] Total blending: {blend_time:.3f} s")
+            print(f"[TIMER] Total PNG writing: {write_time:.3f} s")
 
             # Save prediction results
             temp_vid_path = f"{temp_dir}/temp_{input_basename}_{audio_basename}.mp4"
