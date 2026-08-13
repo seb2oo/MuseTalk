@@ -30,9 +30,6 @@ RTX A 5000
 
 
 4 : Une fois dans le docker qui tourne, il faudra lancer ces commandes la : 
-- bash /workspace/setup_after_dockerRun.sh
-- cd /workspace/MuseTalk
-pip install huggingface_hub==0.30.2 (Car le docker file de l'époque contenait une version non compatible et j'ai pas envie de refaire un dockerfile..)
 
 git clone --branch docker-optimisation https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
 pip install --no-cache-dir "huggingface_hub[cli]==0.30.2" --> A Faire au cas ou... car on ne las pas mit dans l'image docker de base ..
@@ -69,8 +66,6 @@ git branch
 git status
 
 
-
-
 time python -m scripts.inference \
     --inference_config configs/inference/test.yaml \
     --result_dir results/test \
@@ -79,6 +74,8 @@ time python -m scripts.inference \
     --version v15
 
 le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)
+
+python3 -m http.server 8000 --bind 0.0.0.0
 ****
 
 

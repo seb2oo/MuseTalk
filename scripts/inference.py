@@ -14,6 +14,13 @@ from omegaconf import OmegaConf
 from transformers import WhisperModel
 import sys
 
+import time
+
+T0 = time.perf_counter()
+
+def log_time(label):
+    print(f"[TIMER] {label}: {time.perf_counter() - T0:.3f} s")
+
 from musetalk.utils.blending import get_image
 from musetalk.utils.face_parsing import FaceParsing
 from musetalk.utils.audio_processor import AudioProcessor
@@ -37,9 +44,12 @@ def main(args):
         os.environ["PATH"] = f"{args.ffmpeg_path}{path_separator}{os.environ['PATH']}"
         if not fast_check_ffmpeg():
             print("Warning: Unable to find ffmpeg, please ensure ffmpeg is properly installed")
+    log_time("after : Configure ffmpeg path")
     
     # Set computing device
     device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
+
+
     # Load model weights
     vae, unet, pe = load_all_model(
         unet_model_path=args.unet_model_path, 
@@ -48,24 +58,29 @@ def main(args):
         device=device
     )
     timesteps = torch.tensor([0], device=device)
+    log_time("after : Load model weights")
 
     # Convert models to half precision if float16 is enabled
     if args.use_float16:
         pe = pe.half()
         vae.vae = vae.vae.half()
         unet.model = unet.model.half()
+    log_time("after : Convert models to half precision if float16 is enabled")
     
     # Move models to specified device
     pe = pe.to(device)
     vae.vae = vae.vae.to(device)
     unet.model = unet.model.to(device)
+    log_time("after : Move models to specified device")
         
     # Initialize audio processor and Whisper model
+    t_model_start = time.perf_counter()
     audio_processor = AudioProcessor(feature_extractor_path=args.whisper_dir)
     weight_dtype = unet.model.dtype
     whisper = WhisperModel.from_pretrained(args.whisper_dir)
     whisper = whisper.to(device=device, dtype=weight_dtype).eval()
     whisper.requires_grad_(False)
+    log_time("after : Initialize audio processor and Whisper model")
     
     # Initialize face parser with configurable parameters based on version
     if args.version == "v15":
@@ -75,39 +90,46 @@ def main(args):
         )
     else:  # v1
         fp = FaceParsing()
+    log_time("after : Initialize face parser with configurable parameters based on version")
     
     # Load inference configuration
     inference_config = OmegaConf.load(args.inference_config)
     print("Loaded inference config:", inference_config)
+    log_time("after : Load inference configuration")
     
     # Process each task
-    for task_id in inference_config:
+    for task_nb,task_id in enumerate(inference_config):
         try:
             # Get task configuration
             video_path = inference_config[task_id]["video_path"]
             audio_path = inference_config[task_id]["audio_path"]
             if "result_name" in inference_config[task_id]:
                 args.output_vid_name = inference_config[task_id]["result_name"]
+            log_time(f"after : Get task configuration, task_nb = {task_nb}")
             
             # Set bbox_shift based on version
             if args.version == "v15":
                 bbox_shift = 0  # v15 uses fixed bbox_shift
             else:
                 bbox_shift = inference_config[task_id].get("bbox_shift", args.bbox_shift)  # v1 uses config or default
+            log_time(f"after : Set bbox_shift based on version, task_nb = {task_nb}")
             
             # Set output paths
             input_basename = os.path.basename(video_path).split('.')[0]
             audio_basename = os.path.basename(audio_path).split('.')[0]
             output_basename = f"{input_basename}_{audio_basename}"
+            log_time(f"after : Set output paths, task_nb = {task_nb}")
             
             # Create temporary directories
             temp_dir = os.path.join(args.result_dir, f"{args.version}")
             os.makedirs(temp_dir, exist_ok=True)
+            log_time(f"after : Create temporary directories, task_nb = {task_nb}")
             
             # Set result save paths
             result_img_save_path = os.path.join(temp_dir, output_basename)
             crop_coord_save_path = os.path.join(args.result_dir, "../", input_basename+".pkl")
             os.makedirs(result_img_save_path, exist_ok=True)
+            log_time(f"after : Set result save paths, task_nb = {task_nb}")
             
             # Set output video paths
             if args.output_vid_name is None:
@@ -115,6 +137,7 @@ def main(args):
             else:
                 output_vid_name = os.path.join(temp_dir, args.output_vid_name)
             output_vid_name_concat = os.path.join(temp_dir, output_basename + "_concat.mp4")
+            log_time(f"after : Set output video paths, task_nb = {task_nb}")
             
             # Extract frames from source video
             save_dir_full = None
@@ -134,6 +157,7 @@ def main(args):
                 fps = args.fps
             else:
                 raise ValueError(f"{video_path} should be a video file, an image file or a directory of images")
+            log_time(f"after : Extract frames from source video, task_nb = {task_nb}")
 
             # Extract audio features
             whisper_input_features, librosa_length = audio_processor.get_audio_feature(audio_path)
@@ -147,6 +171,7 @@ def main(args):
                 audio_padding_length_left=args.audio_padding_length_left,
                 audio_padding_length_right=args.audio_padding_length_right,
             )
+            log_time(f"after : Extract audio features, task_nb = {task_nb}")
             
             # Preprocess input images
             if os.path.exists(crop_coord_save_path) and args.use_saved_coord:
@@ -160,7 +185,8 @@ def main(args):
                 with open(crop_coord_save_path, 'wb') as f:
                     pickle.dump(coord_list, f)
             
-            print(f"Number of frames: {len(frame_list)}")         
+            print(f"Number of frames: {len(frame_list)}")        
+            log_time(f"after : Preprocess input images, task_nb = {task_nb}") 
             
             # Process each frame
             input_latent_list = []
@@ -175,11 +201,13 @@ def main(args):
                 crop_frame = cv2.resize(crop_frame, (256,256), interpolation=cv2.INTER_LANCZOS4)
                 latents = vae.get_latents_for_unet(crop_frame)
                 input_latent_list.append(latents)
+            log_time(f"after : Process each frame, task_nb = {task_nb}") 
         
             # Smooth first and last frames
             frame_list_cycle = frame_list + frame_list[::-1]
             coord_list_cycle = coord_list + coord_list[::-1]
             input_latent_list_cycle = input_latent_list + input_latent_list[::-1]
+            log_time(f"after : Smooth first and last frames, task_nb = {task_nb}") 
             
             # Batch inference
             print("Starting inference")
@@ -195,6 +223,7 @@ def main(args):
             
             res_frame_list = []
             total = int(np.ceil(float(video_num) / batch_size))
+            log_time(f"after : Batch inference, task_nb = {task_nb}") 
             
             # Execute inference
             for i, (whisper_batch, latent_batch) in enumerate(tqdm(gen, total=total)):
@@ -205,6 +234,7 @@ def main(args):
                 recon = vae.decode_latents(pred_latents)
                 for res_frame in recon:
                     res_frame_list.append(res_frame)
+            log_time(f"after : Execute inference, task_nb = {task_nb}")
             
             # Pad generated images to original video size
             print("Padding generated images to original video size")
@@ -226,6 +256,7 @@ def main(args):
                 else:
                     combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], fp=fp)
                 cv2.imwrite(f"{result_img_save_path}/{str(i).zfill(8)}.png", combine_frame)
+            log_time(f"after : Pad generated images to original video size, task_nb = {task_nb}")
 
             # Save prediction results
             temp_vid_path = f"{temp_dir}/temp_{input_basename}_{audio_basename}.mp4"
@@ -233,9 +264,11 @@ def main(args):
             print("Video generation command:", cmd_img2video)
             os.system(cmd_img2video)   
             
+            
             cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {temp_vid_path} {output_vid_name}"
             print("Audio combination command:", cmd_combine_audio) 
             os.system(cmd_combine_audio)
+            log_time(f"after : Save prediction results, task_nb = {task_nb}")
             
             # Clean up temporary files
             shutil.rmtree(result_img_save_path)
@@ -246,6 +279,7 @@ def main(args):
                 os.remove(crop_coord_save_path)
                     
             print(f"Results saved to {output_vid_name}")
+            log_time(f"after : Clean up temporary files, task_nb = {task_nb}")
         except Exception as e:
             print("Error occurred during processing:", e)
 
