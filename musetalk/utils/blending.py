@@ -2,6 +2,7 @@ from PIL import Image
 import numpy as np
 import cv2
 import copy
+import time
 
 
 def get_crop_box(box, expand):
@@ -62,7 +63,17 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
     ori_shape = face_large.size  # 裁剪后图像的原始尺寸
 
     # 对裁剪后的面部区域进行面部解析，生成掩码
+    if not hasattr(get_image, "_count"):
+        get_image._count = 0
+    get_image._count += 1
+
+    t = time.perf_counter()
     mask_image = face_seg(face_large, mode=mode, fp=fp)
+    if get_image._count <= 5:
+        print(
+            f"[TIMER] face_seg frame {get_image._count}: "
+            f"{time.perf_counter() - t:.4f} s"
+        )
     
     mask_small = mask_image.crop((x - x_s, y - y_s, x1 - x_s, y1 - y_s))  # 裁剪出面部区域的掩码
     
