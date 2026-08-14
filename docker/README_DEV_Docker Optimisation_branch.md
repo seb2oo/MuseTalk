@@ -77,6 +77,12 @@ time python -m scripts.inference \
 le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)
 
 python3 -m http.server 8000 --bind 0.0.0.0
+
+
+PS : ici un code exemple pour créer un tag une fois un milestone realisé :
+git tag -a v0.1.0-speed-optimization-png -m "First speed optimization - static PNG input only"
+git push origin docker-optimisation
+git push origin v0.1.0-speed-optimization-png
 ****
 
 

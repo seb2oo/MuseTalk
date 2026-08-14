@@ -255,15 +255,43 @@ def main(args):
             log_time(f"after : Batch inference, task_nb = {task_nb}") 
             
             # Execute inference
+            total_pe_time = 0.0
+            total_unet_time = 0.0
+            total_vae_time = 0.0
             for i, (whisper_batch, latent_batch) in enumerate(tqdm(gen, total=total)):
+                t0 = time.perf_counter()
                 audio_feature_batch = pe(whisper_batch)
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                total_pe_time += time.perf_counter() - t0
                 latent_batch = latent_batch.to(dtype=unet.model.dtype)
                 
+
+
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                t0 = time.perf_counter()
                 pred_latents = unet.model(latent_batch, timesteps, encoder_hidden_states=audio_feature_batch).sample
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                total_unet_time += time.perf_counter() - t0
+
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                t0 = time.perf_counter()
                 recon = vae.decode_latents(pred_latents)
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                total_vae_time += time.perf_counter() - t0
+
                 for res_frame in recon:
                     res_frame_list.append(res_frame)
             log_time(f"after : Execute inference, task_nb = {task_nb}")
+            print(f"[TIMER] Total PE:   {total_pe_time:.3f} s")
+            print(f"[TIMER] Total UNet: {total_unet_time:.3f} s")
+            print(f"[TIMER] Total VAE:  {total_vae_time:.3f} s")
+            print(f"[TIMER] Total inference measured: "
+            f"{total_pe_time + total_unet_time + total_vae_time:.3f} s")
             
             # Pad generated images to original video size
             print("Padding generated images to original video size")
