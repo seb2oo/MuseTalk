@@ -14,7 +14,8 @@ from omegaconf import OmegaConf
 from transformers import WhisperModel
 import sys
 
-from musetalk.utils.blending import get_image, get_image_prepare_material
+
+from musetalk.utils.blending import get_image, get_image_blending, get_image_prepare_material
 
 import time
 
@@ -194,22 +195,22 @@ def main(args):
             # ----------------------------------------------------------
             # Pre-compute blending mask for static PNG input
             # ----------------------------------------------------------
-
-            mask_array = None
-            mask_crop_box = None
+            static_mask_array = None
+            static_crop_box = None
 
             if args.use_png:
                 print("Static PNG mode: pre-computing blending mask...")
 
-                x1, y1, x2, y2 = coord_list[0]
+                valid_bbox = next(
+                    bbox for bbox in coord_list
+                    if bbox != coord_placeholder
+                )
 
-                if args.version == "v15":
-                    y2 = y2 + args.extra_margin
-                    y2 = min(y2, frame_list[0].shape[0])
-
-                mask_array, mask_crop_box = get_image_prepare_material(
+                static_mask_array, static_crop_box = get_image_prepare_material(
                     frame_list[0],
-                    [x1, y1, x2, y2],
+                    valid_bbox,
+                    upper_boundary_ratio=0.5,
+                    expand=1.5,
                     fp=fp,
                     mode=args.parsing_mode
                 )
@@ -288,29 +289,26 @@ def main(args):
                 # else:
                 #     combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], fp=fp)
 
-                if args.version == "v15":
+                if args.use_png:
+                # Static PNG: reuse pre-computed mask
+                    combine_frame = get_image_blending(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        static_mask_array,
+                        static_crop_box
+                    )
 
-                    if args.use_png:
-                        combine_frame = get_image(
-                            ori_frame,
-                            res_frame,
-                            [x1, y1, x2, y2],
-                            mode=args.parsing_mode,
-                            fp=fp,
-                            mask_array=mask_array,
-                            crop_box=mask_crop_box
-                        )
-                    else:
-                        combine_frame = get_image(
-                            ori_frame,
-                            res_frame,
-                            [x1, y1, x2, y2],
-                            mode=args.parsing_mode,
-                            fp=fp
-                        )
+                elif args.version == "v15":
+                    combine_frame = get_image(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        mode=args.parsing_mode,
+                        fp=fp
+                    )
 
                 else:
-
                     combine_frame = get_image(
                         ori_frame,
                         res_frame,
