@@ -72,7 +72,10 @@ time python -m scripts.inference \
     --unet_model_path models/musetalkV15/unet.pth \
     --unet_config models/musetalkV15/musetalk.json \
     --version v15 \
-    --use_png
+    --use_png \
+    --batch_size 8 \
+    --use_float16
+
 
 le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)
 
@@ -81,7 +84,6 @@ python3 -m http.server 8000 --bind 0.0.0.0
 
 PS : ici un code exemple pour créer un tag une fois un milestone realisé :
 git tag -a v0.1.0-speed-optimization-png -m "First speed optimization - static PNG input only"
-git push origin docker-optimisation
 git push origin v0.1.0-speed-optimization-png
 ****
 
