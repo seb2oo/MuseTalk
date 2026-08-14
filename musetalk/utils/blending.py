@@ -33,7 +33,17 @@ def face_seg(image, mode="raw", fp=None):
     return seg_image
 
 
-def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode="raw", fp=None):
+def get_image(
+    image,
+    face,
+    face_box,
+    upper_boundary_ratio=0.5,
+    expand=1.5,
+    mode="raw",
+    fp=None,
+    mask_array=None,
+    crop_box=None
+):
     """
     将裁剪的面部图像粘贴回原始图像，并进行一些处理。
 
@@ -52,33 +62,86 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
     body = Image.fromarray(image[:, :, ::-1])  # 身体部分图像(整张图)
     face = Image.fromarray(face[:, :, ::-1])  # 面部图像
 
-    x, y, x1, y1 = face_box  # 获取面部边界框的坐标
-    crop_box, s = get_crop_box(face_box, expand)  # 计算扩展后的裁剪框
-    x_s, y_s, x_e, y_e = crop_box  # 裁剪框的坐标
-    face_position = (x, y)  # 面部在原始图像中的位置
+    # x, y, x1, y1 = face_box  # 获取面部边界框的坐标
+    # crop_box, s = get_crop_box(face_box, expand)  # 计算扩展后的裁剪框
+    # x_s, y_s, x_e, y_e = crop_box  # 裁剪框的坐标
+    # face_position = (x, y)  # 面部在原始图像中的位置
 
-    # 从身体图像中裁剪出扩展后的面部区域（下巴到边界有距离）
-    face_large = body.crop(crop_box)
+    x, y, x1, y1 = face_box
+    # Reuse pre-computed crop box when available
+    if crop_box is None:
+        crop_box, s = get_crop_box(face_box, expand)
+    x_s, y_s, x_e, y_e = crop_box
+
+    face_position = (x, y)
+
+    # # 从身体图像中裁剪出扩展后的面部区域（下巴到边界有距离）
+    # face_large = body.crop(crop_box)
         
-    ori_shape = face_large.size  # 裁剪后图像的原始尺寸
+    # ori_shape = face_large.size  # 裁剪后图像的原始尺寸
 
-    # 对裁剪后的面部区域进行面部解析，生成掩码
-    if not hasattr(get_image, "_count"):
-        get_image._count = 0
-    get_image._count += 1
+    # # 对裁剪后的面部区域进行面部解析，生成掩码
+    # if not hasattr(get_image, "_count"):
+    #     get_image._count = 0
+    # get_image._count += 1
 
-    t = time.perf_counter()
-    mask_image = face_seg(face_large, mode=mode, fp=fp)
-    if get_image._count <= 5:
-        print(
-            f"[TIMER] face_seg frame {get_image._count}: "
-            f"{time.perf_counter() - t:.4f} s"
+    # t = time.perf_counter()
+    # mask_image = face_seg(face_large, mode=mode, fp=fp)
+    # if get_image._count <= 5:
+    #     print(
+    #         f"[TIMER] face_seg frame {get_image._count}: "
+    #         f"{time.perf_counter() - t:.4f} s"
+    #     )
+    
+    # mask_small = mask_image.crop((x - x_s, y - y_s, x1 - x_s, y1 - y_s))  # 裁剪出面部区域的掩码
+    
+    # mask_image = Image.new('L', ori_shape, 0)  # 创建一个全黑的掩码图像
+    # mask_image.paste(mask_small, (x - x_s, y - y_s, x1 - x_s, y1 - y_s))  # 将面部掩码粘贴到全黑图像上
+
+    face_large = body.crop(crop_box)
+
+    if mask_array is None:
+
+        # ------------------------------------------------------
+        # Dynamic mode: calculate face parsing for this frame
+        # ------------------------------------------------------
+
+        ori_shape = face_large.size
+
+        mask_image = face_seg(
+            face_large,
+            mode=mode,
+            fp=fp
         )
-    
-    mask_small = mask_image.crop((x - x_s, y - y_s, x1 - x_s, y1 - y_s))  # 裁剪出面部区域的掩码
-    
-    mask_image = Image.new('L', ori_shape, 0)  # 创建一个全黑的掩码图像
-    mask_image.paste(mask_small, (x - x_s, y - y_s, x1 - x_s, y1 - y_s))  # 将面部掩码粘贴到全黑图像上
+
+        mask_small = mask_image.crop(
+            (
+                x - x_s,
+                y - y_s,
+                x1 - x_s,
+                y1 - y_s
+            )
+        )
+
+        mask_image = Image.new('L', ori_shape, 0)
+
+        mask_image.paste(
+            mask_small,
+            (
+                x - x_s,
+                y - y_s,
+                x1 - x_s,
+                y1 - y_s
+            )
+        )
+
+    else:
+
+        # ------------------------------------------------------
+        # Static PNG mode: reuse pre-computed mask
+        # ------------------------------------------------------
+
+        mask_image = Image.fromarray(mask_array).convert("L")
     
     
     # 保留面部区域的上半部分（用于控制说话区域）

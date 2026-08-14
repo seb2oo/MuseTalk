@@ -71,7 +71,8 @@ time python -m scripts.inference \
     --result_dir results/test \
     --unet_model_path models/musetalkV15/unet.pth \
     --unet_config models/musetalkV15/musetalk.json \
-    --version v15
+    --version v15 \
+    --use_png
 
 le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)
 

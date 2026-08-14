@@ -14,6 +14,8 @@ from omegaconf import OmegaConf
 from transformers import WhisperModel
 import sys
 
+from musetalk.utils.blending import get_image, get_image_prepare_material
+
 import time
 
 T0 = time.perf_counter()
@@ -188,6 +190,31 @@ def main(args):
             
             print(f"Number of frames: {len(frame_list)}")        
             log_time(f"after : Preprocess input images, task_nb = {task_nb}") 
+
+            # ----------------------------------------------------------
+            # Pre-compute blending mask for static PNG input
+            # ----------------------------------------------------------
+
+            mask_array = None
+            mask_crop_box = None
+
+            if args.use_png:
+                print("Static PNG mode: pre-computing blending mask...")
+
+                x1, y1, x2, y2 = coord_list[0]
+
+                if args.version == "v15":
+                    y2 = y2 + args.extra_margin
+                    y2 = min(y2, frame_list[0].shape[0])
+
+                mask_array, mask_crop_box = get_image_prepare_material(
+                    frame_list[0],
+                    [x1, y1, x2, y2],
+                    fp=fp,
+                    mode=args.parsing_mode
+                )
+
+                log_time("after : Pre-compute static PNG blending mask")
             
             # Process each frame
             input_latent_list = []
@@ -253,13 +280,43 @@ def main(args):
                 except:
                     continue
                 
-                # Merge results with version-specific parameters
+                # # Merge results with version-specific parameters
+                # if args.version == "v15":
+                #     t = time.perf_counter()
+                #     combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], mode=args.parsing_mode, fp=fp)
+                #     blend_time += time.perf_counter() - t
+                # else:
+                #     combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], fp=fp)
+
                 if args.version == "v15":
-                    t = time.perf_counter()
-                    combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], mode=args.parsing_mode, fp=fp)
-                    blend_time += time.perf_counter() - t
+
+                    if args.use_png:
+                        combine_frame = get_image(
+                            ori_frame,
+                            res_frame,
+                            [x1, y1, x2, y2],
+                            mode=args.parsing_mode,
+                            fp=fp,
+                            mask_array=mask_array,
+                            crop_box=mask_crop_box
+                        )
+                    else:
+                        combine_frame = get_image(
+                            ori_frame,
+                            res_frame,
+                            [x1, y1, x2, y2],
+                            mode=args.parsing_mode,
+                            fp=fp
+                        )
+
                 else:
-                    combine_frame = get_image(ori_frame, res_frame, [x1, y1, x2, y2], fp=fp)
+
+                    combine_frame = get_image(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        fp=fp
+                    )
 
                 t = time.perf_counter()
                 cv2.imwrite(f"{result_img_save_path}/{str(i).zfill(8)}.png", combine_frame)
@@ -317,5 +374,10 @@ if __name__ == "__main__":
     parser.add_argument("--left_cheek_width", type=int, default=90, help="Width of left cheek region")
     parser.add_argument("--right_cheek_width", type=int, default=90, help="Width of right cheek region")
     parser.add_argument("--version", type=str, default="v15", choices=["v1", "v15"], help="Model version to use")
+    parser.add_argument(
+    "--use_png",
+    action="store_true",
+    help="Use a static PNG image and reuse the blending mask for all generated frames"
+    )
     args = parser.parse_args()
     main(args)
