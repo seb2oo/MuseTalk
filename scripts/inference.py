@@ -31,10 +31,13 @@ from musetalk.utils.utils import get_file_type, get_video_fps, datagen, load_all
 from musetalk.utils.preprocessing import get_landmark_and_bbox, read_imgs, coord_placeholder
 
 def fast_check_ffmpeg():
+    t = time.perf_counter()
     try:
         subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
+        print(f"[TIMER] ffmpeg -version: {time.perf_counter() - t:.3f} s")
         return True
     except:
+        print(f"[TIMER] ffmpeg check failed: {time.perf_counter() - t:.3f} s")
         return False
 
 @torch.no_grad()
