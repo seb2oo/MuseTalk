@@ -67,51 +67,112 @@ def main(args):
 
 
     # Load model weights
-    vae, unet, pe = load_all_model(
-        unet_model_path=args.unet_model_path, 
-        vae_type=args.vae_type,
-        unet_config=args.unet_config,
-        device=device
-    )
+    # vae, unet, pe = load_all_model(
+    #     unet_model_path=args.unet_model_path, 
+    #     vae_type=args.vae_type,
+    #     unet_config=args.unet_config,
+    #     device=device
+    # )
+    if hasattr(args, "runtime") and args.runtime is not None:
+
+        runtime = args.runtime
+
+        vae = runtime.vae
+        unet = runtime.unet
+        pe = runtime.pe
+
+        device = runtime.device
+        timesteps = runtime.timesteps
+
+        audio_processor = runtime.audio_processor
+        whisper = runtime.whisper
+        fp = runtime.fp
+
+    else:
+
+        # Load model weights
+        vae, unet, pe = load_all_model(
+            unet_model_path=args.unet_model_path,
+            vae_type=args.vae_type,
+            unet_config=args.unet_config,
+            device=device
+        )
+
+        timesteps = torch.tensor([0], device=device)
+
+        if args.use_float16:
+            pe = pe.half()
+            vae.vae = vae.vae.half()
+            unet.model = unet.model.half()
+
+        pe = pe.to(device)
+        vae.vae = vae.vae.to(device)
+        unet.model = unet.model.to(device)
+
+        audio_processor = AudioProcessor(
+            feature_extractor_path=args.whisper_dir
+        )
+
+        weight_dtype = unet.model.dtype
+
+        whisper = WhisperModel.from_pretrained(
+            args.whisper_dir
+        )
+
+        whisper = whisper.to(
+            device=device,
+            dtype=weight_dtype
+        ).eval()
+
+        whisper.requires_grad_(False)
+
+        if args.version == "v15":
+            fp = FaceParsing(
+                left_cheek_width=args.left_cheek_width,
+                right_cheek_width=args.right_cheek_width
+            )
+        else:
+            fp = FaceParsing()
     timesteps = torch.tensor([0], device=device)
     log_time("after : Load model weights")
 
-    # Convert models to half precision if float16 is enabled
-    if args.use_float16:
-        pe = pe.half()
-        vae.vae = vae.vae.half()
-        unet.model = unet.model.half()
-    log_time("after : Convert models to half precision if float16 is enabled")
+    # # Convert models to half precision if float16 is enabled
+    # if args.use_float16:
+    #     pe = pe.half()
+    #     vae.vae = vae.vae.half()
+    #     unet.model = unet.model.half()
+    # log_time("after : Convert models to half precision if float16 is enabled")
     
-    # Move models to specified device
-    pe = pe.to(device)
-    vae.vae = vae.vae.to(device)
-    unet.model = unet.model.to(device)
-    log_time("after : Move models to specified device")
+    # # Move models to specified device
+    # pe = pe.to(device)
+    # vae.vae = vae.vae.to(device)
+    # unet.model = unet.model.to(device)
+    # log_time("after : Move models to specified device")
         
-    # Initialize audio processor and Whisper model
-    t_model_start = time.perf_counter()
-    audio_processor = AudioProcessor(feature_extractor_path=args.whisper_dir)
-    weight_dtype = unet.model.dtype
-    whisper = WhisperModel.from_pretrained(args.whisper_dir)
-    whisper = whisper.to(device=device, dtype=weight_dtype).eval()
-    whisper.requires_grad_(False)
-    log_time("after : Initialize audio processor and Whisper model")
+    # # Initialize audio processor and Whisper model
+    # t_model_start = time.perf_counter()
+    # audio_processor = AudioProcessor(feature_extractor_path=args.whisper_dir)
+    # weight_dtype = unet.model.dtype
+    # whisper = WhisperModel.from_pretrained(args.whisper_dir)
+    # whisper = whisper.to(device=device, dtype=weight_dtype).eval()
+    # whisper.requires_grad_(False)
+    # log_time("after : Initialize audio processor and Whisper model")
     
-    # Initialize face parser with configurable parameters based on version
-    if args.version == "v15":
-        fp = FaceParsing(
-            left_cheek_width=args.left_cheek_width,
-            right_cheek_width=args.right_cheek_width
-        )
-    else:  # v1
-        fp = FaceParsing()
-    log_time("after : Initialize face parser with configurable parameters based on version")
+    # # Initialize face parser with configurable parameters based on version
+    # if args.version == "v15":
+    #     fp = FaceParsing(
+    #         left_cheek_width=args.left_cheek_width,
+    #         right_cheek_width=args.right_cheek_width
+    #     )
+    # else:  # v1
+    #     fp = FaceParsing()
+    # log_time("after : Initialize face parser with configurable parameters based on version")
     
     # Load inference configuration
     inference_config = OmegaConf.load(args.inference_config)
     print("Loaded inference config:", inference_config)
     log_time("after : Load inference configuration")
+
     
     # Process each task
     for task_nb,task_id in enumerate(inference_config):
