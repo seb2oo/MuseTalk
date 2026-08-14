@@ -42,6 +42,8 @@ def fast_check_ffmpeg():
 
 @torch.no_grad()
 def main(args):
+    global T0
+    T0 = time.perf_counter()
     # Configure ffmpeg path
     t_ffmpeg_config = time.perf_counter()
     if not fast_check_ffmpeg():
@@ -89,6 +91,7 @@ def main(args):
         fp = runtime.fp
 
         weight_dtype = runtime.weight_dtype
+        log_time("after : model are already loaded")
 
     else:
 
@@ -135,6 +138,8 @@ def main(args):
             )
         else:
             fp = FaceParsing()
+
+        log_time("after : first time model loaded")
 
     # timesteps = torch.tensor([0], device=device)
     # log_time("after : Load model weights")
