@@ -62,8 +62,8 @@ def main(args):
             print(f"[TIMER] after second ffmpeg check: {time.perf_counter() - t_ffmpeg_config:.3f} s")
     log_time("after : Configure ffmpeg path")
     
-    # Set computing device
-    device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
+    # # Set computing device
+    # device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
 
 
     # Load model weights
@@ -87,6 +87,8 @@ def main(args):
         audio_processor = runtime.audio_processor
         whisper = runtime.whisper
         fp = runtime.fp
+
+        weight_dtype = runtime.weight_dtype
 
     else:
 
@@ -133,8 +135,9 @@ def main(args):
             )
         else:
             fp = FaceParsing()
-    timesteps = torch.tensor([0], device=device)
-    log_time("after : Load model weights")
+
+    # timesteps = torch.tensor([0], device=device)
+    # log_time("after : Load model weights")
 
     # # Convert models to half precision if float16 is enabled
     # if args.use_float16:
