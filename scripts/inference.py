@@ -43,13 +43,23 @@ def fast_check_ffmpeg():
 @torch.no_grad()
 def main(args):
     # Configure ffmpeg path
+    t_ffmpeg_config = time.perf_counter()
     if not fast_check_ffmpeg():
         print("Adding ffmpeg to PATH")
+
+        ffmpeg_check_1 = time.perf_counter()
+        print(f"[TIMER] first ffmpeg check block: {ffmpeg_check_1 - t_ffmpeg_config:.3f} s")
+
         # Choose path separator based on operating system
         path_separator = ';' if sys.platform == 'win32' else ':'
+        print(f"[TIMER] before PATH modification: {time.perf_counter() - t_ffmpeg_config:.3f} s")
+
         os.environ["PATH"] = f"{args.ffmpeg_path}{path_separator}{os.environ['PATH']}"
+        print(f"[TIMER] after PATH modification: {time.perf_counter() - t_ffmpeg_config:.3f} s")
+
         if not fast_check_ffmpeg():
             print("Warning: Unable to find ffmpeg, please ensure ffmpeg is properly installed")
+            print(f"[TIMER] after second ffmpeg check: {time.perf_counter() - t_ffmpeg_config:.3f} s")
     log_time("after : Configure ffmpeg path")
     
     # Set computing device
