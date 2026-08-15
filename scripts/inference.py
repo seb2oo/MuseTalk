@@ -583,7 +583,14 @@ def main(args):
             
             cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {temp_vid_path} {output_vid_name}"
             print("Audio combination command:", cmd_combine_audio) 
+            t_audio_ffmpeg = time.perf_counter()
             os.system(cmd_combine_audio)
+            audio_ffmpeg_time = time.perf_counter() - t_audio_ffmpeg
+            print(
+            f"[TIMER] FFmpeg audio combination: "
+            f"{audio_ffmpeg_time:.3f} s"
+            )
+            log_time(f"after : Save prediction results , local timer, task_nb = {task_nb}")
             log_time(f"after : Save prediction results, task_nb = {task_nb}")
             
             # Clean up temporary files
