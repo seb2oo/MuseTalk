@@ -14,22 +14,38 @@ def get_crop_box(box, expand):
     return crop_box, s
 
 
+# def face_seg(image, mode="raw", fp=None):
+#     """
+#     对图像进行面部解析，生成面部区域的掩码。
+
+#     Args:
+#         image (PIL.Image): 输入图像。
+
+#     Returns:
+#         PIL.Image: 面部区域的掩码图像。
+#     """
+#     seg_image = fp(image, mode=mode)  # 使用 FaceParsing 模型解析面部
+#     if seg_image is None:
+#         print("error, no person_segment")  # 如果没有检测到面部，返回错误
+#         return None
+
+#     seg_image = seg_image.resize(image.size)  # 将掩码图像调整为输入图像的大小
+#     return seg_image
+
 def face_seg(image, mode="raw", fp=None):
-    """
-    对图像进行面部解析，生成面部区域的掩码。
 
-    Args:
-        image (PIL.Image): 输入图像。
+    t = time.perf_counter()
 
-    Returns:
-        PIL.Image: 面部区域的掩码图像。
-    """
-    seg_image = fp(image, mode=mode)  # 使用 FaceParsing 模型解析面部
+    seg_image = fp(image, mode=mode)
+
+    print(f"[TIMER] FaceParsing: {time.perf_counter() - t:.4f} s")
+
     if seg_image is None:
-        print("error, no person_segment")  # 如果没有检测到面部，返回错误
+        print("error, no person_segment")
         return None
 
-    seg_image = seg_image.resize(image.size)  # 将掩码图像调整为输入图像的大小
+    seg_image = seg_image.resize(image.size)
+
     return seg_image
 
 
