@@ -303,21 +303,81 @@ def main(args):
 
                 log_time("after : Pre-compute static PNG blending mask")
             
+            # # Process each frame
+            # input_latent_list = []
+            # for bbox, frame in zip(coord_list, frame_list):
+            #     if bbox == coord_placeholder:
+            #         continue
+            #     x1, y1, x2, y2 = bbox
+            #     if args.version == "v15":
+            #         y2 = y2 + args.extra_margin
+            #         y2 = min(y2, frame.shape[0])
+            #     crop_frame = frame[y1:y2, x1:x2]
+            #     crop_frame = cv2.resize(crop_frame, (256,256), interpolation=cv2.INTER_LANCZOS4)
+            #     latents = vae.get_latents_for_unet(crop_frame)
+            #     input_latent_list.append(latents)
+            # log_time(f"after : Process each frame, task_nb = {task_nb}") 
+
             # Process each frame
             input_latent_list = []
+
+            total_crop_time = 0.0
+            total_resize_time = 0.0
+            total_vae_encode_time = 0.0
+
             for bbox, frame in zip(coord_list, frame_list):
+
                 if bbox == coord_placeholder:
                     continue
+
+                # ------------------------------------------------------
+                # Crop
+                # ------------------------------------------------------
+                t = time.perf_counter()
+
                 x1, y1, x2, y2 = bbox
+
                 if args.version == "v15":
                     y2 = y2 + args.extra_margin
                     y2 = min(y2, frame.shape[0])
+
                 crop_frame = frame[y1:y2, x1:x2]
-                crop_frame = cv2.resize(crop_frame, (256,256), interpolation=cv2.INTER_LANCZOS4)
+
+                total_crop_time += time.perf_counter() - t
+
+                # ------------------------------------------------------
+                # Resize
+                # ------------------------------------------------------
+                t = time.perf_counter()
+
+                crop_frame = cv2.resize(
+                    crop_frame,
+                    (256, 256),
+                    interpolation=cv2.INTER_LANCZOS4
+                )
+
+                total_resize_time += time.perf_counter() - t
+
+                # ------------------------------------------------------
+                # VAE encode
+                # ------------------------------------------------------
+                t = time.perf_counter()
+
                 latents = vae.get_latents_for_unet(crop_frame)
+
+                total_vae_encode_time += time.perf_counter() - t
+
                 input_latent_list.append(latents)
-            log_time(f"after : Process each frame, task_nb = {task_nb}") 
-        
+
+
+            print(f"[TIMER] Process crop total: {total_crop_time:.3f} s")
+            print(f"[TIMER] Process resize total: {total_resize_time:.3f} s")
+            print(f"[TIMER] Process VAE encode total: {total_vae_encode_time:.3f} s")
+            print(
+                f"[TIMER] Process components total: "
+                f"{total_crop_time + total_resize_time + total_vae_encode_time:.3f} s"
+            )
+                    
             # Smooth first and last frames
             frame_list_cycle = frame_list + frame_list[::-1]
             coord_list_cycle = coord_list + coord_list[::-1]
