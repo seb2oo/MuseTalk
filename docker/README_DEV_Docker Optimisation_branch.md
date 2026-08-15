@@ -77,6 +77,55 @@ time python -m scripts.inference \
     --use_float16
 
 
+ci dessous la version qui ne charge que une fois les model lorsque l'on fait plusieurs inférences
+***
+cd MuseTalk
+python
+
+import scripts.inference as inf
+from interactive import runtime
+
+
+args = inf.argparse.Namespace(
+    inference_config="configs/inference/test.yaml",
+    result_dir="results/test",
+
+    unet_model_path="models/musetalkV15/unet.pth",
+    unet_config="models/musetalkV15/musetalk.json",
+
+    version="v15",
+    use_png=True,
+    batch_size=16,
+    use_float16=True,
+
+    runtime=runtime,
+
+    gpu_id=0,
+    vae_type="sd-vae",
+    whisper_dir="models/whisper",
+
+    ffmpeg_path="",
+    output_vid_name=None,
+
+    fps=25,
+    bbox_shift=0,
+
+    audio_padding_length_left=2,
+    audio_padding_length_right=2,
+
+    left_cheek_width=90,
+    right_cheek_width=90,
+
+    extra_margin=10,
+    parsing_mode="jaw",
+
+    use_saved_coord=False,
+    saved_coord=False,
+)
+
+inf.main(args)
+***
+
 le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)
 
 python3 -m http.server 8000 --bind 0.0.0.0

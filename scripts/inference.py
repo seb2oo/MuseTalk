@@ -283,6 +283,8 @@ def main(args):
             if args.use_png:
                 print("Static PNG mode: pre-computing blending mask...")
 
+                t_mask_start = time.perf_counter()
+
                 valid_bbox = next(
                     bbox for bbox in coord_list
                     if bbox != coord_placeholder
@@ -296,6 +298,8 @@ def main(args):
                     fp=fp,
                     mode=args.parsing_mode
                 )
+                mask_time = time.perf_counter() - t_mask_start
+                print(f"[TIMER] Static PNG mask: {mask_time:.3f} s")
 
                 log_time("after : Pre-compute static PNG blending mask")
             
