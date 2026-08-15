@@ -78,10 +78,10 @@ time python -m scripts.inference \
 
 
 ci dessous la version qui ne charge que une fois les model lorsque l'on fait plusieurs inférences
-ps : dans le cas d'un input d'une image, utiliser : use_png=True, use_saved_coord=False, saved_coord=False
+ps : dans le cas d'un input d'une image, utiliser : use_png=True, use_saved_coord=False, saved_coord=False 
 ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=False, saved_coord=True (pour la première inférence)
 ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=True, saved_coord=False (pour TOUTES les prochaines inférences)
-    
+ps : Dans la dernière version, use_png n'est même lus utilisé ! Car compatible directement pour image et vidéo
 ***
 cd MuseTalk
 python

@@ -14,39 +14,39 @@ def get_crop_box(box, expand):
     return crop_box, s
 
 
-# def face_seg(image, mode="raw", fp=None):
-#     """
-#     对图像进行面部解析，生成面部区域的掩码。
-
-#     Args:
-#         image (PIL.Image): 输入图像。
-
-#     Returns:
-#         PIL.Image: 面部区域的掩码图像。
-#     """
-#     seg_image = fp(image, mode=mode)  # 使用 FaceParsing 模型解析面部
-#     if seg_image is None:
-#         print("error, no person_segment")  # 如果没有检测到面部，返回错误
-#         return None
-
-#     seg_image = seg_image.resize(image.size)  # 将掩码图像调整为输入图像的大小
-#     return seg_image
-
 def face_seg(image, mode="raw", fp=None):
+    """
+    对图像进行面部解析，生成面部区域的掩码。
 
-    t = time.perf_counter()
+    Args:
+        image (PIL.Image): 输入图像。
 
-    seg_image = fp(image, mode=mode)
-
-    print(f"[TIMER] FaceParsing: {time.perf_counter() - t:.4f} s")
-
+    Returns:
+        PIL.Image: 面部区域的掩码图像。
+    """
+    seg_image = fp(image, mode=mode)  # 使用 FaceParsing 模型解析面部
     if seg_image is None:
-        print("error, no person_segment")
+        print("error, no person_segment")  # 如果没有检测到面部，返回错误
         return None
 
-    seg_image = seg_image.resize(image.size)
-
+    seg_image = seg_image.resize(image.size)  # 将掩码图像调整为输入图像的大小
     return seg_image
+
+# def face_seg(image, mode="raw", fp=None):
+
+#     t = time.perf_counter()
+
+#     seg_image = fp(image, mode=mode)
+
+#     print(f"[TIMER] FaceParsing: {time.perf_counter() - t:.4f} s")
+
+#     if seg_image is None:
+#         print("error, no person_segment")
+#         return None
+
+#     seg_image = seg_image.resize(image.size)
+
+#     return seg_image
 
 
 def get_image(
@@ -327,3 +327,5 @@ def get_image_prepare_material(image, face_box, upper_boundary_ratio=0.5, expand
     blur_kernel_size = int(0.1 * ori_shape[0] // 2 * 2) + 1
     mask_array = cv2.GaussianBlur(np.array(modified_mask_image), (blur_kernel_size, blur_kernel_size), 0)
     return mask_array, crop_box
+
+

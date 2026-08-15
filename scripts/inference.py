@@ -15,7 +15,8 @@ from transformers import WhisperModel
 import sys
 
 
-from musetalk.utils.blending import get_image, get_image_blending, get_image_prepare_material
+# from musetalk.utils.blending import get_image, get_image_blending, get_image_prepare_material
+from musetalk.utils.blending import get_image_blending, get_image_prepare_material
 
 import time
 
@@ -24,7 +25,7 @@ T0 = time.perf_counter()
 def log_time(label):
     print(f"[TIMER] {label}: {time.perf_counter() - T0:.3f} s")
 
-from musetalk.utils.blending import get_image
+# from musetalk.utils.blending import get_image
 from musetalk.utils.face_parsing import FaceParsing
 from musetalk.utils.audio_processor import AudioProcessor
 from musetalk.utils.utils import get_file_type, get_video_fps, datagen, load_all_model
@@ -275,34 +276,70 @@ def main(args):
             log_time(f"after : Preprocess input images, task_nb = {task_nb}") 
 
 
+            # # ----------------------------------------------------------
+            # # Pre-compute blending mask for static PNG input
+            # # ----------------------------------------------------------
+            # static_mask_array = None
+            # static_crop_box = None
+
+            # if args.use_png:
+            #     print("Static PNG mode: pre-computing blending mask...")
+
+            #     t_mask_start = time.perf_counter()
+
+            #     valid_bbox = next(
+            #         bbox for bbox in coord_list
+            #         if bbox != coord_placeholder
+            #     )
+
+            #     static_mask_array, static_crop_box = get_image_prepare_material(
+            #         frame_list[0],
+            #         valid_bbox,
+            #         upper_boundary_ratio=0.5,
+            #         expand=1.5,
+            #         fp=fp,
+            #         mode=args.parsing_mode
+            #     )
+            #     mask_time = time.perf_counter() - t_mask_start
+            #     print(f"[TIMER] Static PNG mask: {mask_time:.3f} s")
+
+            #     log_time("after : Pre-compute static PNG blending mask")
+
+
             # ----------------------------------------------------------
-            # Pre-compute blending mask for static PNG input
+            # Pre-compute blending mask ONCE
+            # FaceParsing is executed only once per task
             # ----------------------------------------------------------
-            static_mask_array = None
-            static_crop_box = None
 
-            if args.use_png:
-                print("Static PNG mode: pre-computing blending mask...")
 
-                t_mask_start = time.perf_counter()
+            print("Pre-computing blending mask ONCE...")
 
-                valid_bbox = next(
-                    bbox for bbox in coord_list
-                    if bbox != coord_placeholder
-                )
+            t_mask_start = time.perf_counter()
 
-                static_mask_array, static_crop_box = get_image_prepare_material(
-                    frame_list[0],
-                    valid_bbox,
-                    upper_boundary_ratio=0.5,
-                    expand=1.5,
-                    fp=fp,
-                    mode=args.parsing_mode
-                )
-                mask_time = time.perf_counter() - t_mask_start
-                print(f"[TIMER] Static PNG mask: {mask_time:.3f} s")
+            valid_bbox = next(
+                bbox for bbox in coord_list
+                if bbox != coord_placeholder
+            )
 
-                log_time("after : Pre-compute static PNG blending mask")
+            static_mask_array, static_crop_box = get_image_prepare_material(
+                frame_list[0],
+                valid_bbox,
+                upper_boundary_ratio=0.5,
+                expand=1.5,
+                fp=fp,
+                mode=args.parsing_mode
+            )
+
+            mask_time = time.perf_counter() - t_mask_start
+
+            print(
+                f"[TIMER] FaceParsing + mask preparation ONCE: "
+                f"{mask_time:.3f} s"
+            )
+
+            log_time("after : Pre-compute blending mask")
+
+
             
             # # Process each frame
             # input_latent_list = []
@@ -678,36 +715,54 @@ def main(args):
                 # Blending
                 # ------------------------------------------------------
 
+                # t = time.perf_counter()
+
+                # if args.use_png:
+
+                #     combine_frame = get_image_blending(
+                #         ori_frame,
+                #         res_frame,
+                #         [x1, y1, x2, y2],
+                #         static_mask_array,
+                #         static_crop_box
+                #     )
+
+                # elif args.version == "v15":
+
+                #     combine_frame = get_image(
+                #         ori_frame,
+                #         res_frame,
+                #         [x1, y1, x2, y2],
+                #         mode=args.parsing_mode,
+                #         fp=fp
+                #     )
+
+                # else:
+
+                #     combine_frame = get_image(
+                #         ori_frame,
+                #         res_frame,
+                #         [x1, y1, x2, y2],
+                #         fp=fp
+                #     )
+
+                # blend_time += time.perf_counter() - t
+
+
+                # ------------------------------------------------------
+                # Blending using pre-computed mask
+                # FaceParsing is NOT called here
+                # ------------------------------------------------------
+
                 t = time.perf_counter()
 
-                if args.use_png:
-
-                    combine_frame = get_image_blending(
-                        ori_frame,
-                        res_frame,
-                        [x1, y1, x2, y2],
-                        static_mask_array,
-                        static_crop_box
-                    )
-
-                elif args.version == "v15":
-
-                    combine_frame = get_image(
-                        ori_frame,
-                        res_frame,
-                        [x1, y1, x2, y2],
-                        mode=args.parsing_mode,
-                        fp=fp
-                    )
-
-                else:
-
-                    combine_frame = get_image(
-                        ori_frame,
-                        res_frame,
-                        [x1, y1, x2, y2],
-                        fp=fp
-                    )
+                combine_frame = get_image_blending(
+                    ori_frame,
+                    res_frame,
+                    [x1, y1, x2, y2],
+                    static_mask_array,
+                    static_crop_box
+                )
 
                 blend_time += time.perf_counter() - t
 
