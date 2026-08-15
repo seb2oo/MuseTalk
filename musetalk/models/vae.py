@@ -106,6 +106,79 @@ class VAE():
         image = (image * 255).round().astype("uint8")
         image = image[...,::-1] # RGB to BGR
         return image
+
+    def get_latents_for_unet_batch(self, imgs):
+        """
+        Encode a batch of images for U-Net input.
+
+        imgs:
+            List of BGR NumPy arrays, each already cropped/resized to 256x256.
+
+        Returns:
+            Tensor of shape [B, 8, 32, 32]
+        """
+
+        # --------------------------------------------------
+        # Convert batch BGR -> RGB
+        # --------------------------------------------------
+
+        x = np.stack(
+            [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in imgs],
+            axis=0
+        )
+
+        # [B, H, W, C] -> [B, C, H, W]
+        x = x.astype(np.float32) / 255.0
+        x = np.transpose(x, (0, 3, 1, 2))
+
+        x = torch.from_numpy(x)
+
+        # Normalize exactly like preprocess_img()
+        x = self.transform(x)
+
+        x = x.to(
+            device=self.vae.device,
+            dtype=self.vae.dtype,
+            non_blocking=True
+        )
+
+        # --------------------------------------------------
+        # Masked version
+        # --------------------------------------------------
+
+        mask = self._mask_tensor.to(
+            device=self.vae.device,
+            dtype=x.dtype
+        )
+
+        masked_x = x * (mask > 0.5)
+
+        # --------------------------------------------------
+        # Encode BOTH versions in batches
+        # --------------------------------------------------
+
+        with torch.no_grad():
+
+            masked_latents = self.vae.encode(
+                masked_x
+            ).latent_dist.sample()
+
+            ref_latents = self.vae.encode(
+                x
+            ).latent_dist.sample()
+
+        masked_latents = self.scaling_factor * masked_latents
+        ref_latents = self.scaling_factor * ref_latents
+
+        # [B, 4, 32, 32] + [B, 4, 32, 32]
+        # -> [B, 8, 32, 32]
+
+        latent_model_input = torch.cat(
+            [masked_latents, ref_latents],
+            dim=1
+        )
+
+        return latent_model_input
     
     def get_latents_for_unet(self,img):
         """
