@@ -95,7 +95,7 @@ args = inf.argparse.Namespace(
 
     version="v15",
     use_png=True,
-    batch_size=16,
+    batch_size=8,
     use_float16=True,
 
     runtime=runtime,
@@ -124,6 +124,7 @@ args = inf.argparse.Namespace(
 )
 
 inf.main(args)
+exit()
 ***
 
 le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)

@@ -492,9 +492,7 @@ def main(args):
                 cmd_img2video,
                 stdin=subprocess.PIPE
             )
-            return_code = ffmpeg_process.wait()
-            ffmpeg_total_time = time.perf_counter() - t_ffmpeg_start
-            print(f"[TIMER] FFmpeg total process time: {ffmpeg_total_time:.3f} s")
+            
 
             for i, res_frame in enumerate(tqdm(res_frame_list)):
 
@@ -571,11 +569,15 @@ def main(args):
 
             return_code = ffmpeg_process.wait()
 
+            # Timer FFmpeg complet
+            ffmpeg_total_time = time.perf_counter() - t_ffmpeg_start
+
             if return_code != 0:
                 raise RuntimeError(
                     f"FFmpeg failed with return code {return_code}"
                 )
 
+            print(f"[TIMER] FFmpeg total: {ffmpeg_total_time:.3f} s")
             print(f"[TIMER] Total blending: {blend_time:.3f} s")
             print("[TIMER] Total PNG writing: 0.000 s")
             
