@@ -378,7 +378,9 @@ def main(args):
             print(f"[TIMER] Total VAE:  {total_vae_time:.3f} s")
             print(f"[TIMER] Total inference measured: "
             f"{total_pe_time + total_unet_time + total_vae_time:.3f} s")
-            
+
+            # old way by saving in IO disk
+            """
             # Pad generated images to original video size
             print("Padding generated images to original video size")
             blend_time = 0
@@ -439,13 +441,139 @@ def main(args):
             log_time(f"after : Pad generated images to original video size, task_nb = {task_nb}")
             print(f"[TIMER] Total blending: {blend_time:.3f} s")
             print(f"[TIMER] Total PNG writing: {write_time:.3f} s")
+          
 
             # Save prediction results
             temp_vid_path = f"{temp_dir}/temp_{input_basename}_{audio_basename}.mp4"
             cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {result_img_save_path}/%08d.png -vcodec libx264 -vf format=yuv420p -crf 18 {temp_vid_path}"
             print("Video generation command:", cmd_img2video)
-            # os.system(cmd_img2video)   
-            
+            os.system(cmd_img2video)   
+            """
+
+            # new way : writh directly on ffmpeg
+
+            # ----------------------------------------------------------
+            # Generate video directly from frames -> FFmpeg
+            # No intermediate PNG files on disk
+            # ----------------------------------------------------------
+
+            print("Padding generated images and sending directly to FFmpeg")
+
+            blend_time = 0
+            write_time = 0
+
+            temp_vid_path = f"{temp_dir}/temp_{input_basename}_{audio_basename}.mp4"
+
+            # Start FFmpeg
+            cmd_img2video = [
+                "ffmpeg",
+                "-y",
+                "-v", "warning",
+
+                # Input comes from Python stdin
+                "-f", "rawvideo",
+                "-pix_fmt", "bgr24",
+                "-s", f"{frame_list[0].shape[1]}x{frame_list[0].shape[0]}",
+                "-r", str(fps),
+                "-i", "-",
+
+                # Output
+                "-vcodec", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-crf", "18",
+
+                temp_vid_path
+            ]
+
+            print("Starting FFmpeg:", " ".join(cmd_img2video))
+
+            ffmpeg_process = subprocess.Popen(
+                cmd_img2video,
+                stdin=subprocess.PIPE
+            )
+
+            for i, res_frame in enumerate(tqdm(res_frame_list)):
+
+                bbox = coord_list_cycle[i % len(coord_list_cycle)]
+
+                ori_frame = copy.deepcopy(
+                    frame_list_cycle[i % len(frame_list_cycle)]
+                )
+
+                x1, y1, x2, y2 = bbox
+
+                if args.version == "v15":
+                    y2 = y2 + args.extra_margin
+                    y2 = min(y2, ori_frame.shape[0])
+
+                try:
+                    res_frame = cv2.resize(
+                        res_frame.astype(np.uint8),
+                        (x2 - x1, y2 - y1)
+                    )
+                except Exception:
+                    continue
+
+                # ------------------------------------------------------
+                # Blending
+                # ------------------------------------------------------
+
+                t = time.perf_counter()
+
+                if args.use_png:
+
+                    combine_frame = get_image_blending(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        static_mask_array,
+                        static_crop_box
+                    )
+
+                elif args.version == "v15":
+
+                    combine_frame = get_image(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        mode=args.parsing_mode,
+                        fp=fp
+                    )
+
+                else:
+
+                    combine_frame = get_image(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        fp=fp
+                    )
+
+                blend_time += time.perf_counter() - t
+
+                # ------------------------------------------------------
+                # Send frame directly to FFmpeg
+                # ------------------------------------------------------
+
+                ffmpeg_process.stdin.write(
+                    combine_frame.astype(np.uint8).tobytes()
+                )
+
+            # ----------------------------------------------------------
+            # Finish FFmpeg
+            # ----------------------------------------------------------
+
+            ffmpeg_process.stdin.close()
+
+            return_code = ffmpeg_process.wait()
+
+            if return_code != 0:
+                raise RuntimeError(
+                    f"FFmpeg failed with return code {return_code}"
+                )
+
+            print(f"[TIMER] Total blending: {blend_time:.3f} s")
+            print("[TIMER] Total PNG writing: 0.000 s")
             
             cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {temp_vid_path} {output_vid_name}"
             print("Audio combination command:", cmd_combine_audio) 
@@ -453,7 +581,7 @@ def main(args):
             log_time(f"after : Save prediction results, task_nb = {task_nb}")
             
             # Clean up temporary files
-            shutil.rmtree(result_img_save_path)
+            # shutil.rmtree(result_img_save_path)
             os.remove(temp_vid_path)
             if save_dir_full is not None and os.path.exists(save_dir_full):
                 shutil.rmtree(save_dir_full)
