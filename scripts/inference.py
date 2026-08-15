@@ -383,6 +383,8 @@ def main(args):
             print("Padding generated images to original video size")
             blend_time = 0
             write_time = 0
+            processed_frames = []           
+            
             for i, res_frame in enumerate(tqdm(res_frame_list)):
                 bbox = coord_list_cycle[i%(len(coord_list_cycle))]
                 ori_frame = copy.deepcopy(frame_list_cycle[i%(len(frame_list_cycle))])
@@ -431,7 +433,8 @@ def main(args):
                     )
 
                 t = time.perf_counter()
-                cv2.imwrite(f"{result_img_save_path}/{str(i).zfill(8)}.png", combine_frame)
+                # cv2.imwrite(f"{result_img_save_path}/{str(i).zfill(8)}.png", combine_frame)
+                processed_frames.append(combine_frame)
                 write_time += time.perf_counter() - t
             log_time(f"after : Pad generated images to original video size, task_nb = {task_nb}")
             print(f"[TIMER] Total blending: {blend_time:.3f} s")
@@ -441,7 +444,7 @@ def main(args):
             temp_vid_path = f"{temp_dir}/temp_{input_basename}_{audio_basename}.mp4"
             cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {result_img_save_path}/%08d.png -vcodec libx264 -vf format=yuv420p -crf 18 {temp_vid_path}"
             print("Video generation command:", cmd_img2video)
-            os.system(cmd_img2video)   
+            # os.system(cmd_img2video)   
             
             
             cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {temp_vid_path} {output_vid_name}"
