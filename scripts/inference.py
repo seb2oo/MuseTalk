@@ -590,7 +590,6 @@ def main(args):
             f"[TIMER] FFmpeg audio combination: "
             f"{audio_ffmpeg_time:.3f} s"
             )
-            log_time(f"after : Save prediction results , local timer, task_nb = {task_nb}")
             log_time(f"after : Save prediction results, task_nb = {task_nb}")
             
             # Clean up temporary files
