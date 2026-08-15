@@ -487,10 +487,14 @@ def main(args):
 
             print("Starting FFmpeg:", " ".join(cmd_img2video))
 
+            t_ffmpeg_start = time.perf_counter()
             ffmpeg_process = subprocess.Popen(
                 cmd_img2video,
                 stdin=subprocess.PIPE
             )
+            return_code = ffmpeg_process.wait()
+            ffmpeg_total_time = time.perf_counter() - t_ffmpeg_start
+            print(f"[TIMER] FFmpeg total process time: {ffmpeg_total_time:.3f} s")
 
             for i, res_frame in enumerate(tqdm(res_frame_list)):
 
