@@ -21,7 +21,7 @@ ps : mettre un autre tag que latest si je repousse le projet V4 mais que je veux
 (shouldBeYourUserNameOnDockerHub)/(shouldBeYourProjectNameOnDockerHub)
 start command : 	sleep infinity
 container disk size : 	30
-volume disk size :	30
+volume disk size :	30 (c'est l'espace sur le "cloud", peut être zero si nécessaire)
 volume mount path : 	/runpod-volume
 Exposed HTTP ports : 	8000 , label : not forcely necessary
 
@@ -78,6 +78,10 @@ time python -m scripts.inference \
 
 
 ci dessous la version qui ne charge que une fois les model lorsque l'on fait plusieurs inférences
+ps : dans le cas d'un input d'une image, utiliser : use_png=True, use_saved_coord=False, saved_coord=False
+ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=False, saved_coord=True (pour la première inférence)
+ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=True, saved_coord=False (pour TOUTES les prochaines inférences)
+    
 ***
 cd MuseTalk
 python
@@ -94,7 +98,7 @@ args = inf.argparse.Namespace(
     unet_config="models/musetalkV15/musetalk.json",
 
     version="v15",
-    use_png=True,
+    use_png=False,
     batch_size=8,
     use_float16=True,
 
@@ -119,7 +123,7 @@ args = inf.argparse.Namespace(
     extra_margin=10,
     parsing_mode="jaw",
 
-    use_saved_coord=False,
+    use_saved_coord=True,
     saved_coord=False,
 )
 

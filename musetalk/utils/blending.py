@@ -167,7 +167,7 @@ def get_image(
     return body[:, :, ::-1]  # 返回处理后的图像（BGR 转 RGB）
 
 
-def get_image_blending(image, face, face_box, mask_array, crop_box):
+# def get_image_blending(image, face, face_box, mask_array, crop_box):
     body = Image.fromarray(image[:,:,::-1])
     face = Image.fromarray(face[:,:,::-1])
 
@@ -181,6 +181,109 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
     body.paste(face_large, crop_box[:2], mask_image)
     body = np.array(body)
     return body[:,:,::-1]
+
+def get_image_blending(image, face, face_box, mask_array, crop_box):
+
+    x, y, x1, y1 = face_box
+    x_s, y_s, x_e, y_e = crop_box
+
+    # --------------------------------------------------
+    # Crop region in original frame
+    # --------------------------------------------------
+
+    crop_x1 = max(0, x_s)
+    crop_y1 = max(0, y_s)
+    crop_x2 = min(image.shape[1], x_e)
+    crop_y2 = min(image.shape[0], y_e)
+
+    # Offset inside crop
+    offset_x = x - x_s
+    offset_y = y - y_s
+
+    face_w = x1 - x
+    face_h = y1 - y
+
+    # --------------------------------------------------
+    # Work directly on NumPy
+    # --------------------------------------------------
+
+    crop = image[crop_y1:crop_y2, crop_x1:crop_x2].copy()
+
+    # --------------------------------------------------
+    # Insert generated face
+    # --------------------------------------------------
+
+    local_x1 = offset_x
+    local_y1 = offset_y
+    local_x2 = local_x1 + face_w
+    local_y2 = local_y1 + face_h
+
+    # Clip in case crop extends outside image
+    src_x1 = max(0, -local_x1)
+    src_y1 = max(0, -local_y1)
+    src_x2 = min(face_w, crop.shape[1] - local_x1)
+    src_y2 = min(face_h, crop.shape[0] - local_y1)
+
+    if src_x2 > src_x1 and src_y2 > src_y1:
+
+        crop[
+            max(0, local_y1):max(0, local_y1) + (src_y2 - src_y1),
+            max(0, local_x1):max(0, local_x1) + (src_x2 - src_x1)
+        ] = face[
+            src_y1:src_y2,
+            src_x1:src_x2
+        ]
+
+    # --------------------------------------------------
+    # Blend with pre-computed mask
+    # --------------------------------------------------
+
+    mask = mask_array
+
+    # Ensure mask dimensions match crop
+    if mask.shape[:2] != crop.shape[:2]:
+        mask = cv2.resize(
+            mask,
+            (crop.shape[1], crop.shape[0]),
+            interpolation=cv2.INTER_LINEAR
+        )
+
+    mask = mask.astype(np.float32) / 255.0
+
+    # Broadcast mask over RGB/BGR channels
+    mask = mask[..., None]
+
+    # Original image crop
+    original_crop = image[
+        crop_y1:crop_y2,
+        crop_x1:crop_x2
+    ].astype(np.float32)
+
+    crop_float = crop.astype(np.float32)
+
+    blended = (
+        crop_float * mask
+        + original_crop * (1.0 - mask)
+    )
+
+    blended = np.clip(
+        blended,
+        0,
+        255
+    ).astype(np.uint8)
+
+    # --------------------------------------------------
+    # Put blended crop back
+    # --------------------------------------------------
+
+    output = image.copy()
+
+    output[
+        crop_y1:crop_y2,
+        crop_x1:crop_x2
+    ] = blended
+
+    return output
 
 
 def get_image_prepare_material(image, face_box, upper_boundary_ratio=0.5, expand=1.5, fp=None, mode="raw"):
