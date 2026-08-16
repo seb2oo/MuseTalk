@@ -122,8 +122,79 @@ class VAE():
         # Convert batch BGR -> RGB
         # --------------------------------------------------
 
+        # x = np.stack(
+        #     [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in imgs],
+        #     axis=0
+        # )
+
+        # # [B, H, W, C] -> [B, C, H, W]
+        # x = x.astype(np.float32) / 255.0
+        # x = np.transpose(x, (0, 3, 1, 2))
+
+        # x = torch.from_numpy(x)
+
+        # # Normalize exactly like preprocess_img()
+        # x = self.transform(x)
+
+        # x = x.to(
+        #     device=self.vae.device,
+        #     dtype=self.vae.dtype,
+        #     non_blocking=True
+        # )
+
+        # # --------------------------------------------------
+        # # Masked version
+        # # --------------------------------------------------
+
+        # mask = self._mask_tensor.to(
+        #     device=self.vae.device,
+        #     dtype=x.dtype
+        # )
+
+        # masked_x = x * (mask > 0.5)
+
+        # --------------------------------------------------
+        # Encode BOTH versions in batches
+        # --------------------------------------------------
+
+        # with torch.no_grad():
+
+        #     masked_latents = self.vae.encode(
+        #         masked_x
+        #     ).latent_dist.sample()
+
+        #     ref_latents = self.vae.encode(
+        #         x
+        #     ).latent_dist.sample()
+
+        # masked_latents = self.scaling_factor * masked_latents
+        # ref_latents = self.scaling_factor * ref_latents
+
+        # # [B, 4, 32, 32] + [B, 4, 32, 32]
+        # # -> [B, 8, 32, 32]
+
+        # latent_model_input = torch.cat(
+        #     [masked_latents, ref_latents],
+        #     dim=1
+        # )
+
+        # return latent_model_input
+
+        ### LA VERSION CI DESSUS NETAIT PAS MATHEMATIQUEMENT FIDELE A :
+        ### x = x * (self._mask_tensor > 0.5)
+        ### x = self.transform(x)
+        ### DE  def get_latents_for_unet(self,img):
+        ### LA VERSION CI DESSOUS CORRIGE CE BUG
+
+        # --------------------------------------------------
+        # Convert BGR -> RGB
+        # --------------------------------------------------
+
         x = np.stack(
-            [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in imgs],
+            [
+                cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                for img in imgs
+            ],
             axis=0
         )
 
@@ -133,8 +204,26 @@ class VAE():
 
         x = torch.from_numpy(x)
 
-        # Normalize exactly like preprocess_img()
+        # --------------------------------------------------
+        # Create masked version BEFORE normalization
+        # Exactly like preprocess_img(..., half_mask=True)
+        # --------------------------------------------------
+
+        mask = self._mask_tensor.to(dtype=x.dtype)
+
+        masked_x = x * (mask > 0.5)
+
+        # --------------------------------------------------
+        # Normalize BOTH versions
+        # Exactly like preprocess_img()
+        # --------------------------------------------------
+
         x = self.transform(x)
+        masked_x = self.transform(masked_x)
+
+        # --------------------------------------------------
+        # Move to VAE
+        # --------------------------------------------------
 
         x = x.to(
             device=self.vae.device,
@@ -142,19 +231,14 @@ class VAE():
             non_blocking=True
         )
 
-        # --------------------------------------------------
-        # Masked version
-        # --------------------------------------------------
-
-        mask = self._mask_tensor.to(
+        masked_x = masked_x.to(
             device=self.vae.device,
-            dtype=x.dtype
+            dtype=self.vae.dtype,
+            non_blocking=True
         )
 
-        masked_x = x * (mask > 0.5)
-
         # --------------------------------------------------
-        # Encode BOTH versions in batches
+        # Encode both versions
         # --------------------------------------------------
 
         with torch.no_grad():
@@ -170,16 +254,11 @@ class VAE():
         masked_latents = self.scaling_factor * masked_latents
         ref_latents = self.scaling_factor * ref_latents
 
-        # [B, 4, 32, 32] + [B, 4, 32, 32]
-        # -> [B, 8, 32, 32]
-
-        latent_model_input = torch.cat(
+        return torch.cat(
             [masked_latents, ref_latents],
             dim=1
         )
-
-        return latent_model_input
-    
+            
     def get_latents_for_unet(self,img):
         """
         Prepare latent variables for a U-Net model.
