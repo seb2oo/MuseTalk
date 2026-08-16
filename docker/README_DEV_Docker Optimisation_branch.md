@@ -80,7 +80,7 @@ time python -m scripts.inference \
 ci dessous la version qui ne charge que une fois les model lorsque l'on fait plusieurs inférences
 ps : dans le cas d'un input d'une image, utiliser : use_png=True, use_saved_coord=False, saved_coord=False 
 ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=False, saved_coord=True (pour la première inférence)
-ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=True, saved_coord=False (pour TOUTES les prochaines inférences)
+ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=True, saved_coord=True (pour TOUTES les prochaines inférences). Si on fait use_saved_coord=True, saved_coord=False, alors il va le supprimer...
 ps : Dans la dernière version, use_png n'est même lus utilisé ! Car compatible directement pour image et vidéo
 ***
 cd MuseTalk
@@ -98,7 +98,7 @@ args = inf.argparse.Namespace(
     unet_config="models/musetalkV15/musetalk.json",
 
     version="v15",
-    use_png=False,
+    use_png=True,
     batch_size=8,
     use_float16=True,
 
@@ -124,7 +124,7 @@ args = inf.argparse.Namespace(
     parsing_mode="jaw",
 
     use_saved_coord=True,
-    saved_coord=False,
+    saved_coord=True,
 )
 
 inf.main(args)

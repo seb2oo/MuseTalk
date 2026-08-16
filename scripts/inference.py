@@ -25,7 +25,7 @@ T0 = time.perf_counter()
 def log_time(label):
     print(f"[TIMER] {label}: {time.perf_counter() - T0:.3f} s")
 
-# from musetalk.utils.blending import get_image
+from musetalk.utils.blending import get_image
 from musetalk.utils.face_parsing import FaceParsing
 from musetalk.utils.audio_processor import AudioProcessor
 from musetalk.utils.utils import get_file_type, get_video_fps, datagen, load_all_model
@@ -715,38 +715,38 @@ def main(args):
                 # Blending
                 # ------------------------------------------------------
 
-                # t = time.perf_counter()
+                t = time.perf_counter()
 
-                # if args.use_png:
+                if args.use_png:
 
-                #     combine_frame = get_image_blending(
-                #         ori_frame,
-                #         res_frame,
-                #         [x1, y1, x2, y2],
-                #         static_mask_array,
-                #         static_crop_box
-                #     )
+                    combine_frame = get_image_blending(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        static_mask_array,
+                        static_crop_box
+                    )
 
-                # elif args.version == "v15":
+                elif args.version == "v15":
 
-                #     combine_frame = get_image(
-                #         ori_frame,
-                #         res_frame,
-                #         [x1, y1, x2, y2],
-                #         mode=args.parsing_mode,
-                #         fp=fp
-                #     )
+                    combine_frame = get_image(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        mode=args.parsing_mode,
+                        fp=fp
+                    )
 
-                # else:
+                else:
 
-                #     combine_frame = get_image(
-                #         ori_frame,
-                #         res_frame,
-                #         [x1, y1, x2, y2],
-                #         fp=fp
-                #     )
+                    combine_frame = get_image(
+                        ori_frame,
+                        res_frame,
+                        [x1, y1, x2, y2],
+                        fp=fp
+                    )
 
-                # blend_time += time.perf_counter() - t
+                blend_time += time.perf_counter() - t
 
 
                 # ------------------------------------------------------
@@ -754,17 +754,17 @@ def main(args):
                 # FaceParsing is NOT called here
                 # ------------------------------------------------------
 
-                t = time.perf_counter()
+                # t = time.perf_counter()
 
-                combine_frame = get_image_blending(
-                    ori_frame,
-                    res_frame,
-                    [x1, y1, x2, y2],
-                    static_mask_array,
-                    static_crop_box
-                )
+                # combine_frame = get_image_blending(
+                #     ori_frame,
+                #     res_frame,
+                #     [x1, y1, x2, y2],
+                #     static_mask_array,
+                #     static_crop_box
+                # )
 
-                blend_time += time.perf_counter() - t
+                # blend_time += time.perf_counter() - t
 
                 # ------------------------------------------------------
                 # Send frame directly to FFmpeg
