@@ -33,6 +33,221 @@ ProjectDir = os.path.abspath(os.path.dirname(__file__))
 CheckpointsDir = os.path.join(ProjectDir, "models")
 
 @torch.no_grad()
+def visualize_inpainting_mask(
+    video_path,
+    bbox_shift,
+    extra_margin=10,
+    parsing_mode="jaw",
+    left_cheek_width=90,
+    right_cheek_width=90
+):
+    """Visualize the area that will be used for MuseTalk inpainting."""
+
+    if video_path is None:
+        return None, "Please upload a video first."
+
+    # ---------------------------------------------------------
+    # Read first frame
+    # ---------------------------------------------------------
+    if get_file_type(video_path) == "video":
+        reader = imageio.get_reader(video_path)
+        frame = reader.get_data(0)
+        reader.close()
+    else:
+        frame = cv2.imread(video_path)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    # ---------------------------------------------------------
+    # Detect face
+    # ---------------------------------------------------------
+    debug_frame_path = "./results/debug/debug_mask_frame.png"
+    os.makedirs("./results/debug", exist_ok=True)
+
+    cv2.imwrite(
+        debug_frame_path,
+        cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    )
+
+    coord_list, frame_list = get_landmark_and_bbox(
+        [debug_frame_path],
+        bbox_shift
+    )
+
+    bbox = coord_list[0]
+    frame = frame_list[0]
+
+    if bbox == coord_placeholder:
+        return None, "No face detected. Try another bbox_shift value."
+
+    x1, y1, x2, y2 = bbox
+
+    # ---------------------------------------------------------
+    # Extra margin
+    # ---------------------------------------------------------
+    y2_extended = min(
+        y2 + int(extra_margin),
+        frame.shape[0]
+    )
+
+    # ---------------------------------------------------------
+    # Create FaceParsing object
+    # ---------------------------------------------------------
+    fp = FaceParsing(
+        left_cheek_width=left_cheek_width,
+        right_cheek_width=right_cheek_width
+    )
+
+    # ---------------------------------------------------------
+    # Create visualization
+    # ---------------------------------------------------------
+    vis = frame.copy()
+
+    # Draw original bbox
+    cv2.rectangle(
+        vis,
+        (x1, y1),
+        (x2, y2),
+        (255, 255, 0),
+        2
+    )
+
+    # Draw extra margin area
+    cv2.rectangle(
+        vis,
+        (x1, y1),
+        (x2, y2_extended),
+        (255, 0, 255),
+        3
+    )
+
+    # ---------------------------------------------------------
+    # Create crop
+    # ---------------------------------------------------------
+    crop_frame = frame[y1:y2_extended, x1:x2]
+
+    crop_frame = cv2.resize(
+        crop_frame,
+        (256, 256),
+        interpolation=cv2.INTER_LANCZOS4
+    )
+
+    # ---------------------------------------------------------
+    # Try to obtain the actual parsing mask
+    # ---------------------------------------------------------
+    try:
+        # FaceParsing internally uses the face parsing network.
+        # We visualize the resulting mask through get_image().
+        #
+        # Create a dummy reconstruction with the same size.
+        dummy = np.zeros_like(crop_frame)
+
+        mask_result = get_image(
+            frame,
+            dummy,
+            [x1, y1, x2, y2_extended],
+            mode=parsing_mode,
+            fp=fp
+        )
+
+        # Detect pixels modified by blending
+        diff = cv2.absdiff(frame, mask_result)
+        gray_diff = cv2.cvtColor(diff, cv2.COLOR_RGB2GRAY)
+
+        mask = gray_diff > 5
+
+        # Overlay mask
+        overlay = vis.copy()
+
+        overlay[mask] = (
+            255,
+            80,
+            80
+        )
+
+        vis = cv2.addWeighted(
+            vis,
+            0.65,
+            overlay,
+            0.35,
+            0
+        )
+
+    except Exception as e:
+        print(f"Mask visualization warning: {e}")
+
+    # ---------------------------------------------------------
+    # Add labels
+    # ---------------------------------------------------------
+    cv2.putText(
+        vis,
+        f"bbox_shift: {bbox_shift}",
+        (20, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (255, 255, 255),
+        2
+    )
+
+    cv2.putText(
+        vis,
+        f"extra_margin: {extra_margin}px",
+        (20, 60),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (255, 255, 255),
+        2
+    )
+
+    cv2.putText(
+        vis,
+        f"left cheek: {left_cheek_width}px",
+        (20, 90),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (255, 255, 255),
+        2
+    )
+
+    cv2.putText(
+        vis,
+        f"right cheek: {right_cheek_width}px",
+        (20, 120),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (255, 255, 255),
+        2
+    )
+
+    cv2.putText(
+        vis,
+        f"mode: {parsing_mode}",
+        (20, 150),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (255, 255, 255),
+        2
+    )
+
+    # ---------------------------------------------------------
+    # Information
+    # ---------------------------------------------------------
+    info = (
+        "INPAINTING VISUALIZATION\n\n"
+        f"Face bbox: [{x1}, {y1}, {x2}, {y2}]\n"
+        f"Extended bbox: [{x1}, {y1}, {x2}, {y2_extended}]\n\n"
+        f"bbox_shift: {bbox_shift}\n"
+        f"extra_margin: {extra_margin}\n"
+        f"left_cheek_width: {left_cheek_width}\n"
+        f"right_cheek_width: {right_cheek_width}\n"
+        f"parsing_mode: {parsing_mode}\n\n"
+        "Cyan rectangle = detected face bbox\n"
+        "Magenta rectangle = bbox + extra margin\n"
+        "Red overlay = estimated modified/inpainting region"
+    )
+
+    return vis, info
+
+@torch.no_grad()
 def debug_inpainting(video_path, bbox_shift, extra_margin=10, parsing_mode="jaw", 
                     left_cheek_width=90, right_cheek_width=90):
     """Debug inpainting parameters, only process the first frame"""
@@ -510,16 +725,55 @@ with gr.Blocks(css=css) as demo:
             right_cheek_width = gr.Slider(label="Right Cheek Width", minimum=20, maximum=160, value=90, step=5)
             bbox_shift_scale = gr.Textbox(label="'left_cheek_width' and 'right_cheek_width' parameters determine the range of left and right cheeks editing when parsing model is 'jaw'. The 'extra_margin' parameter determines the movement range of the jaw. Users can freely adjust these three parameters to obtain better inpainting results.")
 
+            # with gr.Row():
+            #     debug_btn = gr.Button("1. Test Inpainting ")
+            #     btn = gr.Button("2. Generate")
             with gr.Row():
-                debug_btn = gr.Button("1. Test Inpainting ")
-                btn = gr.Button("2. Generate")
+                mask_btn = gr.Button("1. Show Inpainting Mask")
+                debug_btn = gr.Button("2. Test Inpainting")
+                btn = gr.Button("3. Generate")
+        # with gr.Column():
+        #     debug_image = gr.Image(label="Test Inpainting Result (First Frame)")
+        #     debug_info = gr.Textbox(label="Parameter Information", lines=5)
+        #     out1 = gr.Video()
         with gr.Column():
-            debug_image = gr.Image(label="Test Inpainting Result (First Frame)")
-            debug_info = gr.Textbox(label="Parameter Information", lines=5)
+            mask_image = gr.Image(
+                label="Inpainting Mask / Editing Area"
+            )
+
+            mask_info = gr.Textbox(
+                label="Inpainting Parameters",
+                lines=8
+            )
+
+            debug_image = gr.Image(
+                label="Test Inpainting Result (First Frame)"
+            )
+
+            debug_info = gr.Textbox(
+                label="Parameter Information",
+                lines=5
+            )
+
             out1 = gr.Video()
     
     video.change(
         fn=check_video, inputs=[video], outputs=[video]
+    )
+    mask_btn.click(
+    fn=visualize_inpainting_mask,
+    inputs=[
+        video,
+        bbox_shift,
+        extra_margin,
+        parsing_mode,
+        left_cheek_width,
+        right_cheek_width
+    ],
+    outputs=[
+        mask_image,
+        mask_info
+    ]
     )
     btn.click(
         fn=inference,

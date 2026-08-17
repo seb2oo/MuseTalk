@@ -23,7 +23,8 @@ start command : 	sleep infinity
 container disk size : 	30
 volume disk size :	30 (c'est l'espace sur le "cloud", peut être 0 si nécessaire car runpod demander un minimum de crédit de 5 USD pour son utilisation)
 volume mount path : 	/runpod-volume
-Exposed HTTP ports : 	8000 , label : not forcely necessary
+Exposed HTTP ports : 	8000 , label : not forcely necessary --> http web
+Exposed HTTP ports : 	7860 , label : not forcely necessary --> TCP
 
 lancé sur GPU :
 RTX A 5000
@@ -65,6 +66,7 @@ git pull origin docker-optimisation
 git branch
 git status
 
+ps: la version ci-dessous n'est plus fonctionnelle sur la dernière version de inference.py... Voir la version suivante qui est bien plus rapide 
 cd MuseTalk
 time python -m scripts.inference \
     --inference_config configs/inference/test.yaml \
@@ -129,16 +131,33 @@ args = inf.argparse.Namespace(
 
 inf.main(args)
 
-
-
 exit()
 ***
+
+***
+Ici le code a executer dans le kernel pour récuperer les modifiations du git pull fait dans l'autre terminal (i.e avec une modification faite dans le code inference.py):
+
+import importlib
+import scripts.inference as inf
+importlib.reload(inf)
+
+args = inf.argparse.Namespace(
+    inference_config="configs/inference/test.yaml",
+    result_dir="results/test",
+    etc..
+
+ps: potentiellement le git pull aurait pu etre fait dans le même termnial .. demander à chat..
+***
+
 
 le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)
 
 python3 -m http.server 8000 --bind 0.0.0.0
 ps : utiliser la console de runpod pour executer ce code, cela permet d'avoir une seconde console en plus du web terminal et ainsi lancer le 
 server un parrallèle de mon kernel python qui tourne sous le web terminal
+
+python app.py --use_float16 --ip 0.0.0.0 --port 7860 --> et ensuite aller dans l'onglet connect de runpod afin de lancer le TCP port et accéder au gradio
+pour tester les paramètres rapidement avec Test Inpainting , ensuite ne pas utiliser le generate mais la version rapide de inférence que l'on a créer ! Potentiellement comparer les deux ...
 
 
 PS : ici un code exemple pour créer un tag une fois un milestone realisé :
