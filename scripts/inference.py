@@ -43,7 +43,7 @@ def fast_check_ffmpeg():
 
 @torch.no_grad()
 def main(args):
-    print("THIS IS A TEST")
+    print("THIS IS A TEST2")
     global T0
     T0 = time.perf_counter()
     # Configure ffmpeg path
