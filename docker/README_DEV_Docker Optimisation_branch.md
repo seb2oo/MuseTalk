@@ -21,7 +21,7 @@ ps : mettre un autre tag que latest si je repousse le projet V4 mais que je veux
 (shouldBeYourUserNameOnDockerHub)/(shouldBeYourProjectNameOnDockerHub)
 start command : 	sleep infinity
 container disk size : 	30
-volume disk size :	30 (c'est l'espace sur le "cloud", peut être zero si nécessaire)
+volume disk size :	30 (c'est l'espace sur le "cloud", peut être 0 si nécessaire car runpod demander un minimum de crédit de 5 USD pour son utilisation)
 volume mount path : 	/runpod-volume
 Exposed HTTP ports : 	8000 , label : not forcely necessary
 
@@ -81,13 +81,13 @@ ci dessous la version qui ne charge que une fois les model lorsque l'on fait plu
 ps : dans le cas d'un input d'une image, utiliser : use_png=True, use_saved_coord=False, saved_coord=False 
 ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=False, saved_coord=True (pour la première inférence)
 ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=True, saved_coord=True (pour TOUTES les prochaines inférences). Si on fait use_saved_coord=True, saved_coord=False, alors il va le supprimer...
-ps : Dans la dernière version, use_png n'est même lus utilisé ! Car compatible directement pour image et vidéo
+ps : Dans la dernière version, use_png n'est même plus utilisé ! Car compatible directement pour image et vidéo
 ***
 cd MuseTalk
 python
 
-import scripts.inference as inf
-from interactive import runtime
+import scripts.inference as inf # que une fois
+from interactive import runtime # que une fois
 
 
 args = inf.argparse.Namespace(
@@ -98,7 +98,7 @@ args = inf.argparse.Namespace(
     unet_config="models/musetalkV15/musetalk.json",
 
     version="v15",
-    use_png=True,
+    use_png=False,
     batch_size=8,
     use_float16=True,
 
@@ -137,6 +137,8 @@ exit()
 le resultat pourra être visibile directement dans le serveur web ! (ca évite de faire un push dans github !)
 
 python3 -m http.server 8000 --bind 0.0.0.0
+ps : utiliser la console de runpod pour executer ce code, cela permet d'avoir une seconde console en plus du web terminal et ainsi lancer le 
+server un parrallèle de mon kernel python qui tourne sous le web terminal
 
 
 PS : ici un code exemple pour créer un tag une fois un milestone realisé :
