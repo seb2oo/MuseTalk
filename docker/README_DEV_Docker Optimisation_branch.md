@@ -193,3 +193,7 @@ Ce sera par exemple la branch tuning qui necessitera des changement comme par ex
 ***
 use cherry pick instead of merge to get a special commit !
 ***
+
+***
+ici parler des commandes git pour faire le merge final ! 
+***
