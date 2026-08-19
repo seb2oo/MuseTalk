@@ -340,6 +340,28 @@ def main(args):
 
             log_time("after : Pre-compute blending mask")
 
+            ### quick debug
+            debug_frame = frame_list[0].copy()
+
+            x1, y1, x2, y2 = valid_bbox
+
+            cv2.rectangle(
+                debug_frame,
+                (x1, y1),
+                (x2, y2),
+                (0, 255, 0),
+                5
+            )
+
+            cv2.imwrite(
+                "debug_bbox.png",
+                debug_frame
+            )
+
+            print(valid_bbox)
+            print(frame_list[0].shape)
+            ### end quick debug
+
 
             
             # # Process each frame
