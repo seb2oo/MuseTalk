@@ -84,6 +84,8 @@ ps : dans le cas d'un input d'une image, utiliser : use_png=True, use_saved_coor
 ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=False, saved_coord=True (pour la première inférence)
 ps : dans le cas d'un input d'une vidéo, utiliser : use_png=False, use_saved_coord=True, saved_coord=True (pour TOUTES les prochaines inférences). Si on fait use_saved_coord=True, saved_coord=False, alors il va le supprimer...
 ps : Dans la dernière version, use_png n'est même plus utilisé ! Car compatible directement pour image et vidéo
+ps: avoir : use_saved_coord=True, saved_coord=True, fonctionne aussi, il na va pas recalculer le blending a chque fois non plus..
+ps : si on change d'input vidéo par exemple alors il il faudra refaire une première fois : use_saved_coord=False, saved_coord=True
 ***
 cd MuseTalk
 python
@@ -125,7 +127,7 @@ args = inf.argparse.Namespace(
     extra_margin=10,
     parsing_mode="jaw",
 
-    use_saved_coord=True,
+    use_saved_coord=False,
     saved_coord=True,
 )
 
@@ -195,5 +197,5 @@ use cherry pick instead of merge to get a special commit !
 ***
 
 ***
-ici parler des commandes git pour faire le merge final ! 
+ici parler des commandes git pour faire le merge final ! et que si on veut continer avec une autre branche mais qui est dépendante des branches précedentes, alors il suffit simplement de créer la branch dans la branch que l'on a besoin
 ***
