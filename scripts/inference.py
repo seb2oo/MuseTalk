@@ -235,6 +235,9 @@ def main(args):
                 os.system(cmd)
                 input_img_list = sorted(glob.glob(os.path.join(save_dir_full, '*.[jpJP][pnPN]*[gG]')))
                 fps = get_video_fps(video_path)
+                print(f"Video: {video_path}")
+                print(f"FPS: {fps}")
+                print(f"Extracted frames: {len(input_img_list)}")
             elif get_file_type(video_path) == "image":
                 input_img_list = [video_path]
                 fps = args.fps
