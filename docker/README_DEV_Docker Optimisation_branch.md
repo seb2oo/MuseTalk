@@ -161,6 +161,8 @@ server un parrallèle de mon kernel python qui tourne sous le web terminal
 python app.py --use_float16 --ip 0.0.0.0 --port 7860 --> et ensuite aller dans l'onglet connect de runpod afin de lancer le TCP port et accéder au gradio
 pour tester les paramètres rapidement avec Test Inpainting , ensuite ne pas utiliser le generate mais la version rapide de inférence que l'on a créer ! Potentiellement comparer les deux ...
 
+ps : en fait on peut utiliser le nombre de console que l'on souhaite dnas runpod. Il suffit d'aller dans l'onglet console et cliquer en haut à droite : open in a new tab
+
 
 PS : ici un code exemple pour créer un tag une fois un milestone realisé :
 git tag -a v0.1.0-speed-optimization-png -m "First speed optimization - static PNG input only"
@@ -199,3 +201,5 @@ use cherry pick instead of merge to get a special commit !
 ***
 ici parler des commandes git pour faire le merge final ! et que si on veut continer avec une autre branche mais qui est dépendante des branches précedentes, alors il suffit simplement de créer la branch dans la branch que l'on a besoin
 ***
+
+python app.py --use_float16 --ip 0.0.0.0 --port 7860
