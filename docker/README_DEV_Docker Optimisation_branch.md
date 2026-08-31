@@ -167,6 +167,9 @@ ps : en fait on peut utiliser le nombre de console que l'on souhaite dnas runpod
 PS : ici un code exemple pour créer un tag une fois un milestone realisé :
 git tag -a v0.1.0-speed-optimization-png -m "First speed optimization - static PNG input only"
 git push origin v0.1.0-speed-optimization-png
+
+git tag -a v0.1.4_inputsParamtersFound -m "not big change in the code, just funding the good image/movies to get correct output"
+git push origin v0.1.4_inputsParamtersFound
 ****
 
 
@@ -207,14 +210,13 @@ python app.py --use_float16 --ip 0.0.0.0 --port 7860
 
 # MuseTalk 1.5 (Recommended)
 python -m scripts.realtime_inference \
---inference_config configs\inference\realtime.yaml \
---result_dir results\realtime \
---unet_model_path models\musetalkV15\unet.pth \
---unet_config models\musetalkV15\musetalk.json \
+--inference_config configs/inference/realtime.yaml \
+--result_dir results/realtime \
+--unet_model_path models/musetalkV15/unet.pth \
+--unet_config models/musetalkV15/musetalk.json \
 --version v15 \
 --fps 25 \
 --batch_size 8 \
---use_float16 \
---skip_save_images \
+--skip_save_images
 
-
+attention skip_iamge ne crée pas non plus le Mp4....
