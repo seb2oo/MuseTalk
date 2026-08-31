@@ -127,7 +127,7 @@ args = inf.argparse.Namespace(
     extra_margin=10,
     parsing_mode="jaw",
 
-    use_saved_coord=False,
+    use_saved_coord=True,
     saved_coord=True,
 )
 
@@ -203,3 +203,18 @@ ici parler des commandes git pour faire le merge final ! et que si on veut conti
 ***
 
 python app.py --use_float16 --ip 0.0.0.0 --port 7860
+
+
+# MuseTalk 1.5 (Recommended)
+python -m scripts.realtime_inference \
+--inference_config configs\inference\realtime.yaml \
+--result_dir results\realtime \
+--unet_model_path models\musetalkV15\unet.pth \
+--unet_config models\musetalkV15\musetalk.json \
+--version v15 \
+--fps 25 \
+--batch_size 8 \
+--use_float16 \
+--skip_save_images \
+
+
