@@ -205,8 +205,12 @@ use cherry pick instead of merge to get a special commit !
 ici parler des commandes git pour faire le merge final ! et que si on veut continer avec une autre branche mais qui est dépendante des branches précedentes, alors il suffit simplement de créer la branch dans la branch que l'on a besoin
 ***
 
-python app.py --use_float16 --ip 0.0.0.0 --port 7860
 
+
+
+
+
+************* CI DESSOUS TOUT CE QUI CONCERNE LE MODE  REAL-TIME *************
 
 # MuseTalk 1.5 (Recommended)
 python -m scripts.realtime_inference \
@@ -219,4 +223,38 @@ python -m scripts.realtime_inference \
 --batch_size 8 \
 --skip_save_images
 
-attention skip_iamge ne crée pas non plus le Mp4....
+attention skip_iamge ne crée pas non plus le Mp4.... c'est pour le mode stremaing et donc l'envoi d'image en live
+
+je suis reparti sur une nouvelle branche non plus dependnante de docker optimisation car on a fait trop de changement de code ..
+
+Pour supprimer tout le depot et le recloner tout en gardant les model de l'ancien depot 
+***
+mv /workspace/MuseTalk/models /workspace/models_backup
+rm -rf /workspace/MuseTalk
+
+git clone --branch realtime-clean --recurse-submodules https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
+
+mv /workspace/models_backup /workspace/MuseTalk/models
+***
+
+Créer une nouvelle branche 
+*** 
+git fetch origin
+git checkout -b realtime-clean origin/main
+git status
+***
+
+Récuperer le dossier docker depuis un autre branche 
+***
+git restore --source docker-optimisation -- docker/
+git add docker/
+git commit -m "Restore docker configuration"
+***
+
+***
+(récupération de ces changement depuis runpod)
+cd /workspace/MuseTalk
+git fetch origin
+git checkout realtime-clean
+git pull origin realtime-clean
+***

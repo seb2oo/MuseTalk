@@ -25,6 +25,14 @@ import queue
 import time
 import subprocess
 
+import time
+
+T0 = time.perf_counter()
+
+def log_time(label):
+    print(f"[TIMER] {label}: {time.perf_counter() - T0:.3f} s")
+
+
 
 def fast_check_ffmpeg():
     try:
@@ -267,6 +275,7 @@ class Avatar:
                      self.batch_size)
         start_time = time.time()
         res_frame_list = []
+        log_time("XXXYYY toto")
 
         for i, (whisper_batch, latent_batch) in enumerate(tqdm(gen, total=int(np.ceil(float(video_num) / self.batch_size)))):
             audio_feature_batch = pe(whisper_batch.to(device))
@@ -280,6 +289,7 @@ class Avatar:
             for res_frame in recon:
                 res_frame_queue.put(res_frame)
         # Close the queue and sub-thread after all tasks are completed
+        log_time("XXXYYY toto1")
         process_thread.join()
 
         if args.skip_save_images is True:
@@ -306,6 +316,7 @@ class Avatar:
             shutil.rmtree(f"{self.avatar_path}/tmp")
             print(f"result is save to {output_vid}")
         print("\n")
+        log_time("XXXYYY toto3")
 
 
 if __name__ == "__main__":
@@ -362,6 +373,7 @@ if __name__ == "__main__":
         device=device
     )
     timesteps = torch.tensor([0], device=device)
+    log_time("XXXYYY after load_all_model")
 
     pe = pe.half().to(device)
     vae.vae = vae.vae.half().to(device)
@@ -373,6 +385,7 @@ if __name__ == "__main__":
     whisper = WhisperModel.from_pretrained(args.whisper_dir)
     whisper = whisper.to(device=device, dtype=weight_dtype).eval()
     whisper.requires_grad_(False)
+    log_time("XXXYYY after whisper load")
 
     # Initialize face parser with configurable parameters based on version
     if args.version == "v15":
@@ -385,10 +398,13 @@ if __name__ == "__main__":
 
     inference_config = OmegaConf.load(args.inference_config)
     print(inference_config)
+    log_time("XXXYYY after interference config")
 
     for avatar_id in inference_config:
         data_preparation = inference_config[avatar_id]["preparation"]
+        log_time("XXXYYY after data preparation")
         video_path = inference_config[avatar_id]["video_path"]
+        log_time("XXXYYY after video_path")
         if args.version == "v15":
             bbox_shift = 0
         else:
@@ -407,3 +423,4 @@ if __name__ == "__main__":
                            audio_num,
                            args.fps,
                            args.skip_save_images)
+        log_time("XXXYYY after avatar inference")
