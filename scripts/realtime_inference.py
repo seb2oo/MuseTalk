@@ -276,24 +276,57 @@ class Avatar:
         start_time = time.time()
         res_frame_list = []
         log_time("XXXYYY toto")
-
+        time_temp1 = 0
+        time_temp2 = 0
+        time_temp3 = 0
+        time_temp4 = 0
+        time_temp5 = 0
+        time_temp6 = 0
         for i, (whisper_batch, latent_batch) in enumerate(tqdm(gen, total=int(np.ceil(float(video_num) / self.batch_size)))):
+            start1 = time.perf_counter()
             audio_feature_batch = pe(whisper_batch.to(device))
-            log_time("XXXYYY 1")
-            latent_batch = latent_batch.to(device=device, dtype=unet.model.dtype)
-            log_time("XXXYYY 2")
+            start11 = time.perf_counter()
+            # log_time("XXXYYY 1")
+            time_temp1 += start11-start1
 
+            start2 = time.perf_counter()
+            latent_batch = latent_batch.to(device=device, dtype=unet.model.dtype)
+            start22 = time.perf_counter()
+            # log_time("XXXYYY 2")
+            time_temp2 += start22-start2
+
+            start3 = time.perf_counter()
             pred_latents = unet.model(latent_batch,
                                     timesteps,
                                     encoder_hidden_states=audio_feature_batch).sample
-            log_time("XXXYYY 3")
+            start33 = time.perf_counter()
+            # log_time("XXXYYY 3")
+            time_temp3 += start33-start3
+
+            start4 = time.perf_counter()
             pred_latents = pred_latents.to(device=device, dtype=vae.vae.dtype)
-            log_time("XXXYYY 4")
+            start44 = time.perf_counter()
+            # log_time("XXXYYY 4")
+            time_temp4 += start44-start4
+
+            start5 = time.perf_counter()
             recon = vae.decode_latents(pred_latents)
-            log_time("XXXYYY 5")
+            start55 = time.perf_counter()
+            # log_time("XXXYYY 5")
+            time_temp5 += start55-start5
+
+            start6 = time.perf_counter()
             for res_frame in recon:
                 res_frame_queue.put(res_frame)
+            start66 = time.perf_counter()
+            time_temp6 += start66-start6
         # Close the queue and sub-thread after all tasks are completed
+        print("XXXYYY 1 : ",time_temp1/i)
+        print("XXXYYY 2 : ",time_temp2/i)
+        print("XXXYYY 3 : ",time_temp3/i)
+        print("XXXYYY 4 : ",time_temp4/i)
+        print("XXXYYY 5 : ",time_temp5/i)
+        print("XXXYYY 6 : ",time_temp6/i)
         log_time("XXXYYY toto1")
         process_thread.join()
         log_time("XXXYYY toto2")
