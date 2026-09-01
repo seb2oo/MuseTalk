@@ -275,7 +275,7 @@ class Avatar:
                      self.batch_size)
         start_time = time.time()
         res_frame_list = []
-        log_time("XXXYYY toto")
+        log_time("XXXYYY toto") # OK , seems quite fast
         time_temp1 = 0
         time_temp2 = 0
         time_temp3 = 0
@@ -321,15 +321,15 @@ class Avatar:
             start66 = time.perf_counter()
             time_temp6 += start66-start6
         # Close the queue and sub-thread after all tasks are completed
-        print("XXXYYY 1 : ",time_temp1/i)
-        print("XXXYYY 2 : ",time_temp2/i)
-        print("XXXYYY 3 : ",time_temp3/i)
-        print("XXXYYY 4 : ",time_temp4/i)
-        print("XXXYYY 5 : ",time_temp5/i)
-        print("XXXYYY 6 : ",time_temp6/i)
-        log_time("XXXYYY toto1")
+        print("XXXYYY 1 : ",time_temp1)
+        print("XXXYYY 2 : ",time_temp2)
+        print("XXXYYY 3 : ",time_temp3)
+        print("XXXYYY 4 : ",time_temp4)
+        print("XXXYYY 5 : ",time_temp5)
+        print("XXXYYY 6 : ",time_temp6)
+        log_time("XXXYYY toto1") # NOK, to improve 
         process_thread.join()
-        log_time("XXXYYY toto2")
+        log_time("XXXYYY toto2") # NOK, takes too long !!
 
         if args.skip_save_images is True:
             print('Total process time of {} frames without saving images = {}s'.format(
@@ -339,7 +339,7 @@ class Avatar:
             print('Total process time of {} frames including saving images = {}s'.format(
                 video_num,
                 time.time() - start_time))
-        log_time("XXXYYY toto3")
+        log_time("XXXYYY toto3") # OK
 
         if out_vid_name is not None and args.skip_save_images is False:
             # optional
@@ -356,7 +356,7 @@ class Avatar:
             shutil.rmtree(f"{self.avatar_path}/tmp")
             print(f"result is save to {output_vid}")
         print("\n")
-        log_time("XXXYYY toto4")
+        log_time("XXXYYY toto4") # NOK, takes too long !!
 
 
 if __name__ == "__main__":
@@ -405,7 +405,7 @@ if __name__ == "__main__":
 
     # Set computing device
     device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
-
+    log_time("XXXYYY before load_all_model")# OK
     # Load model weights
     vae, unet, pe = load_all_model(
         unet_model_path=args.unet_model_path,
@@ -414,7 +414,7 @@ if __name__ == "__main__":
         device=device
     )
     timesteps = torch.tensor([0], device=device)
-    log_time("XXXYYY after load_all_model")# here to improve
+    log_time("XXXYYY after load_all_model")# NOK here to improve
 
     pe = pe.half().to(device)
     vae.vae = vae.vae.half().to(device)
@@ -426,7 +426,7 @@ if __name__ == "__main__":
     whisper = WhisperModel.from_pretrained(args.whisper_dir)
     whisper = whisper.to(device=device, dtype=weight_dtype).eval()
     whisper.requires_grad_(False)
-    log_time("XXXYYY after whisper load")# ok
+    log_time("XXXYYY after whisper load")# OK
 
     # Initialize face parser with configurable parameters based on version
     if args.version == "v15":
@@ -439,13 +439,13 @@ if __name__ == "__main__":
 
     inference_config = OmegaConf.load(args.inference_config)
     print(inference_config)
-    log_time("XXXYYY after interference config")#ok
+    log_time("XXXYYY after interference config")# OK
 
     for avatar_id in inference_config:
         data_preparation = inference_config[avatar_id]["preparation"]
-        log_time("XXXYYY after data preparation") #ok
+        log_time("XXXYYY after data preparation") # OK
         video_path = inference_config[avatar_id]["video_path"]
-        log_time("XXXYYY after video_path")# ok
+        log_time("XXXYYY after video_path")# OK
         if args.version == "v15":
             bbox_shift = 0
         else:
@@ -456,7 +456,7 @@ if __name__ == "__main__":
             bbox_shift=bbox_shift,
             batch_size=args.batch_size,
             preparation=data_preparation)
-        log_time("XXXYYY after Avatar, reading image ?")
+        log_time("XXXYYY after Avatar, reading image ?") # NOK, has reading images two times ...
 
         audio_clips = inference_config[avatar_id]["audio_clips"]
         for audio_num, audio_path in audio_clips.items():
