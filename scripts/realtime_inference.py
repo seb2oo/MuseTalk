@@ -27,7 +27,7 @@ import subprocess
 
 import time
 
-T0 = time.perf_counter()
+# T0 = time.perf_counter()
 
 def log_time(label):
     print(f"[TIMER] {label}: {time.perf_counter() - T0:.3f} s")
@@ -320,6 +320,7 @@ class Avatar:
 
 
 if __name__ == "__main__":
+    T0 = time.perf_counter()
     '''
     This script is used to simulate online chatting and applies necessary pre-processing such as face detection and face parsing in advance. During online chatting, only UNet and the VAE decoder are involved, which makes MuseTalk real-time.
     '''
