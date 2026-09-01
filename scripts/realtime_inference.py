@@ -279,18 +279,24 @@ class Avatar:
 
         for i, (whisper_batch, latent_batch) in enumerate(tqdm(gen, total=int(np.ceil(float(video_num) / self.batch_size)))):
             audio_feature_batch = pe(whisper_batch.to(device))
+            log_time("XXXYYY 1")
             latent_batch = latent_batch.to(device=device, dtype=unet.model.dtype)
+            log_time("XXXYYY 2")
 
             pred_latents = unet.model(latent_batch,
                                     timesteps,
                                     encoder_hidden_states=audio_feature_batch).sample
+            log_time("XXXYYY 3")
             pred_latents = pred_latents.to(device=device, dtype=vae.vae.dtype)
+            log_time("XXXYYY 4")
             recon = vae.decode_latents(pred_latents)
+            log_time("XXXYYY 5")
             for res_frame in recon:
                 res_frame_queue.put(res_frame)
         # Close the queue and sub-thread after all tasks are completed
         log_time("XXXYYY toto1")
         process_thread.join()
+        log_time("XXXYYY toto2")
 
         if args.skip_save_images is True:
             print('Total process time of {} frames without saving images = {}s'.format(
@@ -300,6 +306,7 @@ class Avatar:
             print('Total process time of {} frames including saving images = {}s'.format(
                 video_num,
                 time.time() - start_time))
+        log_time("XXXYYY toto3")
 
         if out_vid_name is not None and args.skip_save_images is False:
             # optional
@@ -316,7 +323,7 @@ class Avatar:
             shutil.rmtree(f"{self.avatar_path}/tmp")
             print(f"result is save to {output_vid}")
         print("\n")
-        log_time("XXXYYY toto3")
+        log_time("XXXYYY toto4")
 
 
 if __name__ == "__main__":
@@ -374,7 +381,7 @@ if __name__ == "__main__":
         device=device
     )
     timesteps = torch.tensor([0], device=device)
-    log_time("XXXYYY after load_all_model")
+    log_time("XXXYYY after load_all_model")# here to improve
 
     pe = pe.half().to(device)
     vae.vae = vae.vae.half().to(device)
@@ -386,7 +393,7 @@ if __name__ == "__main__":
     whisper = WhisperModel.from_pretrained(args.whisper_dir)
     whisper = whisper.to(device=device, dtype=weight_dtype).eval()
     whisper.requires_grad_(False)
-    log_time("XXXYYY after whisper load")
+    log_time("XXXYYY after whisper load")# ok
 
     # Initialize face parser with configurable parameters based on version
     if args.version == "v15":
@@ -399,13 +406,13 @@ if __name__ == "__main__":
 
     inference_config = OmegaConf.load(args.inference_config)
     print(inference_config)
-    log_time("XXXYYY after interference config")
+    log_time("XXXYYY after interference config")#ok
 
     for avatar_id in inference_config:
         data_preparation = inference_config[avatar_id]["preparation"]
-        log_time("XXXYYY after data preparation")
+        log_time("XXXYYY after data preparation") #ok
         video_path = inference_config[avatar_id]["video_path"]
-        log_time("XXXYYY after video_path")
+        log_time("XXXYYY after video_path")# ok
         if args.version == "v15":
             bbox_shift = 0
         else:
@@ -416,6 +423,7 @@ if __name__ == "__main__":
             bbox_shift=bbox_shift,
             batch_size=args.batch_size,
             preparation=data_preparation)
+        log_time("XXXYYY after Avatar, reading image ?")
 
         audio_clips = inference_config[avatar_id]["audio_clips"]
         for audio_num, audio_path in audio_clips.items():
