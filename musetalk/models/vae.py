@@ -99,12 +99,13 @@ class VAE():
         :param latents: The latent variables to decode.
         :return: A NumPy array representing the decoded image.
         """
-        latents = (1/  self.scaling_factor) * latents
-        image = self.vae.decode(latents.to(self.vae.dtype)).sample
-        image = (image / 2 + 0.5).clamp(0, 1)
-        image = image.detach().cpu().permute(0, 2, 3, 1).float().numpy()
-        image = (image * 255).round().astype("uint8")
-        image = image[...,::-1] # RGB to BGR
+        with torch.inference_mode():
+            latents = (1/  self.scaling_factor) * latents
+            image = self.vae.decode(latents.to(self.vae.dtype)).sample
+            image = (image / 2 + 0.5).clamp(0, 1)
+            image = image.detach().cpu().permute(0, 2, 3, 1).float().numpy()
+            image = (image * 255).round().astype("uint8")
+            image = image[...,::-1] # RGB to BGR
         return image
     
     def get_latents_for_unet(self,img):
