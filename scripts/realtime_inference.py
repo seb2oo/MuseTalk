@@ -111,252 +111,492 @@ class Avatar:
 
             self.mask_bbox_list_cycle.append(mask_bbox)
 
+    def _load_avatar_runtime_data(self):
+        cache_path = os.path.join(self.avatar_path, "avatar_cache.pt")
+
+        # ============================================================
+        # NEW: Load optimized avatar cache
+        # ============================================================
+        if os.path.exists(cache_path):
+
+            print(f"Loading avatar cache: {cache_path}")
+
+            cache = torch.load(
+                cache_path,
+                map_location="cpu",
+                weights_only=False
+            )
+
+            # Check cache compatibility
+            if (
+                cache.get("video_path") != self.video_path
+                or cache.get("bbox_shift") != self.bbox_shift
+                or cache.get("version") != args.version
+            ):
+                raise RuntimeError(
+                    "Avatar cache is incompatible with current configuration."
+                )
+
+            # Load precomputed runtime data
+            self.frame_list_cycle = cache["frame_list_cycle"]
+            self.mask_list_cycle = cache["mask_list_cycle"]
+            self.coord_list_cycle = cache["coord_list_cycle"]
+            self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
+            self.input_latent_list_cycle = cache["input_latent_list_cycle"]
+
+            # Load precomputed mask bboxes
+            if "mask_bbox_list_cycle" in cache:
+
+                self.mask_bbox_list_cycle = cache["mask_bbox_list_cycle"]
+
+            else:
+
+                print(
+                    "Cache does not contain mask_bbox_list_cycle. "
+                    "Computing once..."
+                )
+
+                self.prepare_mask_bboxes()
+
+                cache["mask_bbox_list_cycle"] = self.mask_bbox_list_cycle
+
+                torch.save(
+                    cache,
+                    cache_path
+                )
+
+                print("Avatar cache upgraded with mask_bbox_list_cycle.")
+
+            print("Avatar cache loaded successfully.")
+
+            return
+
+        # ============================================================
+        # Legacy fallback
+        # ============================================================
+
+        print("Avatar cache not found.")
+        print("Falling back to loading individual files...")
+
+        self.input_latent_list_cycle = torch.load(
+            self.latents_out_path,
+            map_location="cpu"
+        )
+
+        with open(self.coords_path, "rb") as f:
+            self.coord_list_cycle = pickle.load(f)
+
+        input_img_list = glob.glob(
+            os.path.join(
+                self.full_imgs_path,
+                "*.[jpJP][pnPN]*[gG]"
+            )
+        )
+
+        input_img_list = sorted(
+            input_img_list,
+            key=lambda x: int(
+                os.path.splitext(
+                    os.path.basename(x)
+                )[0]
+            )
+        )
+
+        self.frame_list_cycle = read_imgs(input_img_list)
+
+        with open(self.mask_coords_path, "rb") as f:
+            self.mask_coords_list_cycle = pickle.load(f)
+
+        input_mask_list = glob.glob(
+            os.path.join(
+                self.mask_out_path,
+                "*.[jpJP][pnPN]*[gG]"
+            )
+        )
+
+        input_mask_list = sorted(
+            input_mask_list,
+            key=lambda x: int(
+                os.path.splitext(
+                    os.path.basename(x)
+                )[0]
+            )
+        )
+
+        self.mask_list_cycle = read_imgs(input_mask_list)
+
+        # Legacy files do not contain mask bboxes,
+        # so calculate them once.
+        self.prepare_mask_bboxes()
+
+        print("Legacy avatar data loaded successfully.")
+
+    # def init(self):
+    #     if self.preparation:
+    #         if os.path.exists(self.avatar_path):
+    #             response = input(f"{self.avatar_id} exists, Do you want to re-create it ? (y/n)")
+    #             if response.lower() == "y":
+    #                 shutil.rmtree(self.avatar_path)
+    #                 print("*********************************")
+    #                 print(f"  creating avator: {self.avatar_id}")
+    #                 print("*********************************")
+    #                 osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
+    #                 self.prepare_material()
+    #             else:
+    #                 # self.input_latent_list_cycle = torch.load(self.latents_out_path)
+    #                 # with open(self.coords_path, 'rb') as f:
+    #                 #     self.coord_list_cycle = pickle.load(f)
+    #                 # input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
+    #                 # input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    #                 # self.frame_list_cycle = read_imgs(input_img_list)
+    #                 # with open(self.mask_coords_path, 'rb') as f:
+    #                 #     self.mask_coords_list_cycle = pickle.load(f)
+    #                 # input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
+    #                 # input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    #                 # self.mask_list_cycle = read_imgs(input_mask_list)
+
+    #                 ### NEW START ###
+    #                 cache_path = os.path.join(self.avatar_path, "avatar_cache.pt")
+
+    #                 if os.path.exists(cache_path):
+    #                     print(f"Loading avatar cache: {cache_path}")
+
+    #                     cache = torch.load(
+    #                         cache_path,
+    #                         map_location="cpu"
+    #                     )
+
+    #                     if (
+    #                         cache.get("video_path") != self.video_path
+    #                         or cache.get("bbox_shift") != self.bbox_shift
+    #                         or cache.get("version") != args.version
+    #                     ):
+    #                         raise RuntimeError(
+    #                             "Avatar cache is incompatible with current configuration."
+    #                         )
+
+    #                     self.frame_list_cycle = cache["frame_list_cycle"]
+    #                     self.mask_list_cycle = cache["mask_list_cycle"]
+    #                     self.coord_list_cycle = cache["coord_list_cycle"]
+    #                     self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
+    #                     self.input_latent_list_cycle = cache["input_latent_list_cycle"]
+    #                     if "mask_bbox_list_cycle" in cache:
+    #                         self.mask_bbox_list_cycle = cache["mask_bbox_list_cycle"]
+    #                     else:
+    #                         print("Cache does not contain mask_bbox_list_cycle. Computing once...")
+    #                         self.prepare_mask_bboxes()
+
+    #                         cache["mask_bbox_list_cycle"] = self.mask_bbox_list_cycle
+    #                         torch.save(cache, self.avatar_cache_path)
+
+    #                         print("Avatar cache upgraded with mask_bbox_list_cycle.")
+
+    #                     # Calculate mask bboxes once from cached masks
+    #                     # self.prepare_mask_bboxes()
+
+    #                     print("Avatar cache loaded successfully.")
+
+    #                 else:
+    #                     print("Avatar cache not found.")
+    #                     print("Falling back to loading individual files...")
+
+    #                     self.input_latent_list_cycle = torch.load(
+    #                         self.latents_out_path,
+    #                         map_location="cpu"
+    #                     )
+
+    #                     with open(self.coords_path, 'rb') as f:
+    #                         self.coord_list_cycle = pickle.load(f)
+
+    #                     input_img_list = glob.glob(
+    #                         os.path.join(
+    #                             self.full_imgs_path,
+    #                             '*.[jpJP][pnPN]*[gG]'
+    #                         )
+    #                     )
+
+    #                     input_img_list = sorted(
+    #                         input_img_list,
+    #                         key=lambda x: int(
+    #                             os.path.splitext(
+    #                                 os.path.basename(x)
+    #                             )[0]
+    #                         )
+    #                     )
+
+    #                     self.frame_list_cycle = read_imgs(input_img_list)
+
+    #                     with open(self.mask_coords_path, 'rb') as f:
+    #                         self.mask_coords_list_cycle = pickle.load(f)
+
+    #                     input_mask_list = glob.glob(
+    #                         os.path.join(
+    #                             self.mask_out_path,
+    #                             '*.[jpJP][pnPN]*[gG]'
+    #                         )
+    #                     )
+
+    #                     input_mask_list = sorted(
+    #                         input_mask_list,
+    #                         key=lambda x: int(
+    #                             os.path.splitext(
+    #                                 os.path.basename(x)
+    #                             )[0]
+    #                         )
+    #                     )
+
+    #                     self.mask_list_cycle = read_imgs(input_mask_list)
+    #                     # Calculate mask bboxes once
+    #                     self.prepare_mask_bboxes()
+    #                 ### NEW END ###
+    #         else:
+    #             print("*********************************")
+    #             print(f"  creating avator: {self.avatar_id}")
+    #             print("*********************************")
+    #             osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
+    #             self.prepare_material()
+    #     else:
+    #         if not os.path.exists(self.avatar_path):
+    #             print(f"{self.avatar_id} does not exist, you should set preparation to True")
+    #             sys.exit()
+
+    #         with open(self.avatar_info_path, "r") as f:
+    #             avatar_info = json.load(f)
+
+    #         if avatar_info['bbox_shift'] != self.avatar_info['bbox_shift']:
+    #             response = input(f" 【bbox_shift】 is changed, you need to re-create it ! (c/continue)")
+    #             if response.lower() == "c":
+    #                 shutil.rmtree(self.avatar_path)
+    #                 print("*********************************")
+    #                 print(f"  creating avator: {self.avatar_id}")
+    #                 print("*********************************")
+    #                 osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
+    #                 self.prepare_material()
+    #             else:
+    #                 sys.exit()
+    #         else:
+    #             # self.input_latent_list_cycle = torch.load(self.latents_out_path)
+    #             # with open(self.coords_path, 'rb') as f:
+    #             #     self.coord_list_cycle = pickle.load(f)
+    #             # input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
+    #             # input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    #             # self.frame_list_cycle = read_imgs(input_img_list)
+    #             # with open(self.mask_coords_path, 'rb') as f:
+    #             #     self.mask_coords_list_cycle = pickle.load(f)
+    #             # input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
+    #             # input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+    #             # self.mask_list_cycle = read_imgs(input_mask_list)
+
+    #             ### NEW START ###
+    #             cache_path = os.path.join(self.avatar_path, "avatar_cache.pt")
+
+    #             if os.path.exists(cache_path):
+    #                 print(f"Loading avatar cache: {cache_path}")
+
+    #                 cache = torch.load(
+    #                     cache_path,
+    #                     map_location="cpu"
+    #                 )
+
+    #                 if (
+    #                     cache.get("video_path") != self.video_path
+    #                     or cache.get("bbox_shift") != self.bbox_shift
+    #                     or cache.get("version") != args.version
+    #                 ):
+    #                     raise RuntimeError(
+    #                         "Avatar cache is incompatible with current configuration."
+    #                     )
+
+    #                 self.frame_list_cycle = cache["frame_list_cycle"]
+    #                 self.mask_list_cycle = cache["mask_list_cycle"]
+    #                 self.coord_list_cycle = cache["coord_list_cycle"]
+    #                 self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
+    #                 self.input_latent_list_cycle = cache["input_latent_list_cycle"]
+    #                 if "mask_bbox_list_cycle" in cache:
+    #                     self.mask_bbox_list_cycle = cache["mask_bbox_list_cycle"]
+    #                 else:
+    #                     print("Cache does not contain mask_bbox_list_cycle. Computing once...")
+    #                     self.prepare_mask_bboxes()
+
+    #                     cache["mask_bbox_list_cycle"] = self.mask_bbox_list_cycle
+    #                     torch.save(cache, self.avatar_cache_path)
+
+    #                     print("Avatar cache upgraded with mask_bbox_list_cycle.")
+
+    #                 # Calculate mask bboxes once from cached masks
+    #                 # self.prepare_mask_bboxes()
+
+    #                 print("Avatar cache loaded successfully.")
+
+    #             else:
+    #                 print("Avatar cache not found.")
+    #                 print("Falling back to loading individual files...")
+
+    #                 self.input_latent_list_cycle = torch.load(
+    #                     self.latents_out_path,
+    #                     map_location="cpu"
+    #                 )
+
+    #                 with open(self.coords_path, 'rb') as f:
+    #                     self.coord_list_cycle = pickle.load(f)
+
+    #                 input_img_list = glob.glob(
+    #                     os.path.join(
+    #                         self.full_imgs_path,
+    #                         '*.[jpJP][pnPN]*[gG]'
+    #                     )
+    #                 )
+
+    #                 input_img_list = sorted(
+    #                     input_img_list,
+    #                     key=lambda x: int(
+    #                         os.path.splitext(
+    #                             os.path.basename(x)
+    #                         )[0]
+    #                     )
+    #                 )
+
+    #                 self.frame_list_cycle = read_imgs(input_img_list)
+
+    #                 with open(self.mask_coords_path, 'rb') as f:
+    #                     self.mask_coords_list_cycle = pickle.load(f)
+
+    #                 input_mask_list = glob.glob(
+    #                     os.path.join(
+    #                         self.mask_out_path,
+    #                         '*.[jpJP][pnPN]*[gG]'
+    #                     )
+    #                 )
+
+    #                 input_mask_list = sorted(
+    #                     input_mask_list,
+    #                     key=lambda x: int(
+    #                         os.path.splitext(
+    #                             os.path.basename(x)
+    #                         )[0]
+    #                     )
+    #                 )
+
+    #                 self.mask_list_cycle = read_imgs(input_mask_list)
+    #                 # Calculate mask bboxes once
+    #                 self.mask_bbox_list_cycle = []
+
+    #                 for mask in self.mask_list_cycle:
+
+    #                     ys, xs = np.where(mask > 0)
+
+    #                     if len(xs) > 0:
+    #                         mask_bbox = (
+    #                             xs.min(),
+    #                             ys.min(),
+    #                             xs.max() + 1,
+    #                             ys.max() + 1
+    #                         )
+    #                     else:
+    #                         mask_bbox = None
+
+    #                     self.mask_bbox_list_cycle.append(mask_bbox)
+    #             ### NEW END ###
+
     def init(self):
+
+        # ============================================================
+        # PREPARATION MODE
+        # ============================================================
         if self.preparation:
+
             if os.path.exists(self.avatar_path):
-                response = input(f"{self.avatar_id} exists, Do you want to re-create it ? (y/n)")
+
+                response = input(
+                    f"{self.avatar_id} exists, "
+                    f"Do you want to re-create it ? (y/n)"
+                )
+
                 if response.lower() == "y":
+
                     shutil.rmtree(self.avatar_path)
+
                     print("*********************************")
                     print(f"  creating avator: {self.avatar_id}")
                     print("*********************************")
-                    osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
+
+                    osmakedirs([
+                        self.avatar_path,
+                        self.full_imgs_path,
+                        self.video_out_path,
+                        self.mask_out_path
+                    ])
+
                     self.prepare_material()
+
                 else:
-                    # self.input_latent_list_cycle = torch.load(self.latents_out_path)
-                    # with open(self.coords_path, 'rb') as f:
-                    #     self.coord_list_cycle = pickle.load(f)
-                    # input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
-                    # input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-                    # self.frame_list_cycle = read_imgs(input_img_list)
-                    # with open(self.mask_coords_path, 'rb') as f:
-                    #     self.mask_coords_list_cycle = pickle.load(f)
-                    # input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
-                    # input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-                    # self.mask_list_cycle = read_imgs(input_mask_list)
 
-                    ### NEW START ###
-                    cache_path = os.path.join(self.avatar_path, "avatar_cache.pt")
+                    self._load_avatar_runtime_data()
 
-                    if os.path.exists(cache_path):
-                        print(f"Loading avatar cache: {cache_path}")
-
-                        cache = torch.load(
-                            cache_path,
-                            map_location="cpu"
-                        )
-
-                        if (
-                            cache.get("video_path") != self.video_path
-                            or cache.get("bbox_shift") != self.bbox_shift
-                            or cache.get("version") != args.version
-                        ):
-                            raise RuntimeError(
-                                "Avatar cache is incompatible with current configuration."
-                            )
-
-                        self.frame_list_cycle = cache["frame_list_cycle"]
-                        self.mask_list_cycle = cache["mask_list_cycle"]
-                        self.coord_list_cycle = cache["coord_list_cycle"]
-                        self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
-                        self.input_latent_list_cycle = cache["input_latent_list_cycle"]
-
-                        # Calculate mask bboxes once from cached masks
-                        self.prepare_mask_bboxes()
-
-                        print("Avatar cache loaded successfully.")
-
-                    else:
-                        print("Avatar cache not found.")
-                        print("Falling back to loading individual files...")
-
-                        self.input_latent_list_cycle = torch.load(
-                            self.latents_out_path,
-                            map_location="cpu"
-                        )
-
-                        with open(self.coords_path, 'rb') as f:
-                            self.coord_list_cycle = pickle.load(f)
-
-                        input_img_list = glob.glob(
-                            os.path.join(
-                                self.full_imgs_path,
-                                '*.[jpJP][pnPN]*[gG]'
-                            )
-                        )
-
-                        input_img_list = sorted(
-                            input_img_list,
-                            key=lambda x: int(
-                                os.path.splitext(
-                                    os.path.basename(x)
-                                )[0]
-                            )
-                        )
-
-                        self.frame_list_cycle = read_imgs(input_img_list)
-
-                        with open(self.mask_coords_path, 'rb') as f:
-                            self.mask_coords_list_cycle = pickle.load(f)
-
-                        input_mask_list = glob.glob(
-                            os.path.join(
-                                self.mask_out_path,
-                                '*.[jpJP][pnPN]*[gG]'
-                            )
-                        )
-
-                        input_mask_list = sorted(
-                            input_mask_list,
-                            key=lambda x: int(
-                                os.path.splitext(
-                                    os.path.basename(x)
-                                )[0]
-                            )
-                        )
-
-                        self.mask_list_cycle = read_imgs(input_mask_list)
-                        # Calculate mask bboxes once
-                        self.prepare_mask_bboxes()
-                    ### NEW END ###
             else:
+
                 print("*********************************")
                 print(f"  creating avator: {self.avatar_id}")
                 print("*********************************")
-                osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
+
+                osmakedirs([
+                    self.avatar_path,
+                    self.full_imgs_path,
+                    self.video_out_path,
+                    self.mask_out_path
+                ])
+
                 self.prepare_material()
+
+        # ============================================================
+        # INFERENCE MODE
+        # ============================================================
         else:
+
             if not os.path.exists(self.avatar_path):
-                print(f"{self.avatar_id} does not exist, you should set preparation to True")
+
+                print(
+                    f"{self.avatar_id} does not exist, "
+                    f"you should set preparation to True"
+                )
+
                 sys.exit()
 
             with open(self.avatar_info_path, "r") as f:
                 avatar_info = json.load(f)
 
-            if avatar_info['bbox_shift'] != self.avatar_info['bbox_shift']:
-                response = input(f" 【bbox_shift】 is changed, you need to re-create it ! (c/continue)")
+            # Check bbox_shift
+            if avatar_info["bbox_shift"] != self.avatar_info["bbox_shift"]:
+
+                response = input(
+                    " 【bbox_shift】 is changed, "
+                    "you need to re-create it ! (c/continue)"
+                )
+
                 if response.lower() == "c":
+
                     shutil.rmtree(self.avatar_path)
+
                     print("*********************************")
                     print(f"  creating avator: {self.avatar_id}")
                     print("*********************************")
-                    osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
+
+                    osmakedirs([
+                        self.avatar_path,
+                        self.full_imgs_path,
+                        self.video_out_path,
+                        self.mask_out_path
+                    ])
+
                     self.prepare_material()
+
                 else:
+
                     sys.exit()
+
             else:
-                # self.input_latent_list_cycle = torch.load(self.latents_out_path)
-                # with open(self.coords_path, 'rb') as f:
-                #     self.coord_list_cycle = pickle.load(f)
-                # input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
-                # input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-                # self.frame_list_cycle = read_imgs(input_img_list)
-                # with open(self.mask_coords_path, 'rb') as f:
-                #     self.mask_coords_list_cycle = pickle.load(f)
-                # input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
-                # input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-                # self.mask_list_cycle = read_imgs(input_mask_list)
 
-                ### NEW START ###
-                cache_path = os.path.join(self.avatar_path, "avatar_cache.pt")
-
-                if os.path.exists(cache_path):
-                    print(f"Loading avatar cache: {cache_path}")
-
-                    cache = torch.load(
-                        cache_path,
-                        map_location="cpu"
-                    )
-
-                    if (
-                        cache.get("video_path") != self.video_path
-                        or cache.get("bbox_shift") != self.bbox_shift
-                        or cache.get("version") != args.version
-                    ):
-                        raise RuntimeError(
-                            "Avatar cache is incompatible with current configuration."
-                        )
-
-                    self.frame_list_cycle = cache["frame_list_cycle"]
-                    self.mask_list_cycle = cache["mask_list_cycle"]
-                    self.coord_list_cycle = cache["coord_list_cycle"]
-                    self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
-                    self.input_latent_list_cycle = cache["input_latent_list_cycle"]
-
-                    # Calculate mask bboxes once from cached masks
-                    self.prepare_mask_bboxes()
-
-                    print("Avatar cache loaded successfully.")
-
-                else:
-                    print("Avatar cache not found.")
-                    print("Falling back to loading individual files...")
-
-                    self.input_latent_list_cycle = torch.load(
-                        self.latents_out_path,
-                        map_location="cpu"
-                    )
-
-                    with open(self.coords_path, 'rb') as f:
-                        self.coord_list_cycle = pickle.load(f)
-
-                    input_img_list = glob.glob(
-                        os.path.join(
-                            self.full_imgs_path,
-                            '*.[jpJP][pnPN]*[gG]'
-                        )
-                    )
-
-                    input_img_list = sorted(
-                        input_img_list,
-                        key=lambda x: int(
-                            os.path.splitext(
-                                os.path.basename(x)
-                            )[0]
-                        )
-                    )
-
-                    self.frame_list_cycle = read_imgs(input_img_list)
-
-                    with open(self.mask_coords_path, 'rb') as f:
-                        self.mask_coords_list_cycle = pickle.load(f)
-
-                    input_mask_list = glob.glob(
-                        os.path.join(
-                            self.mask_out_path,
-                            '*.[jpJP][pnPN]*[gG]'
-                        )
-                    )
-
-                    input_mask_list = sorted(
-                        input_mask_list,
-                        key=lambda x: int(
-                            os.path.splitext(
-                                os.path.basename(x)
-                            )[0]
-                        )
-                    )
-
-                    self.mask_list_cycle = read_imgs(input_mask_list)
-                    # Calculate mask bboxes once
-                    self.mask_bbox_list_cycle = []
-
-                    for mask in self.mask_list_cycle:
-
-                        ys, xs = np.where(mask > 0)
-
-                        if len(xs) > 0:
-                            mask_bbox = (
-                                xs.min(),
-                                ys.min(),
-                                xs.max() + 1,
-                                ys.max() + 1
-                            )
-                        else:
-                            mask_bbox = None
-
-                        self.mask_bbox_list_cycle.append(mask_bbox)
-                ### NEW END ###
+                self._load_avatar_runtime_data()
 
     def prepare_material(self):
         print("preparing data materials ... ...")
@@ -440,6 +680,7 @@ class Avatar:
             "coord_list_cycle": self.coord_list_cycle,
             "mask_coords_list_cycle": self.mask_coords_list_cycle,
             "input_latent_list_cycle": self.input_latent_list_cycle,
+            "mask_bbox_list_cycle": self.mask_bbox_list_cycle, 
         }, cache_path)
 
         print(f"Avatar cache saved to: {cache_path}")

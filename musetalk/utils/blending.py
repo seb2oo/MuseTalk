@@ -782,12 +782,17 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
     # ---------------------------------------------------------
 
     if mask_array.shape[:2] != crop.shape[:2]:
-
-        mask_array = cv2.resize(
-            mask_array,
-            (crop.shape[1], crop.shape[0]),
-            interpolation=cv2.INTER_LINEAR
+        raise RuntimeError(
+        f"Mask/crop mismatch: "
+        f"mask={mask_array.shape[:2]}, "
+        f"crop={crop.shape[:2]}"
         )
+
+        # mask_array = cv2.resize(
+        #     mask_array,
+        #     (crop.shape[1], crop.shape[0]),
+        #     interpolation=cv2.INTER_LINEAR
+        # )
 
     # ---------------------------------------------------------
     # 4. Trouver la bounding box du masque

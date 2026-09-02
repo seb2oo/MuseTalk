@@ -259,3 +259,7 @@ git fetch origin
 git checkout realtime-clean
 git pull origin realtime-clean
 ***
+
+***
+attention a partir du commit : "improve  process_thread.join()"
+à un moment donné, skip_image change de fonction et devient : Ne sauvegarde pas les PNG individuels mais crée quand même le mp4
