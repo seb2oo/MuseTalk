@@ -1371,12 +1371,17 @@ if __name__ == "__main__":
     timesteps = torch.tensor([0], device=device)
     log_time("XXXYYY after load_all_model")# NOK here to improve
 
-    # pe = pe.half().to(device)
-    pe = pe.half().to(device).eval()
+    pe = pe.half().to(device)
+    # pe = pe.half().to(device).eval()
     vae.vae = vae.vae.half().to(device)
-    vae.vae = vae.vae.to(memory_format=torch.channels_last)
-    # unet.model = unet.model.half().to(device)
-    unet.model = unet.model.half().to(device).eval()
+    # vae.vae = vae.vae.to(memory_format=torch.channels_last)
+    unet.model = unet.model.half().to(device)
+    # unet.model = unet.model.half().to(device).eval()
+
+    vae.vae = torch.compile(
+    vae.vae,
+    mode="reduce-overhead"
+    )
 
 
     # Initialize audio processor and Whisper model
