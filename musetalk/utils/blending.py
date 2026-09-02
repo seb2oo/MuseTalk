@@ -408,14 +408,125 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
 #     return output
 
 
+# def get_image_blending(image, face, face_box, mask_array, crop_box):
+
+#     x, y, x1, y1 = face_box
+#     x_s, y_s, x_e, y_e = crop_box
+
+#     # --------------------------------------------------
+#     # Crop coordinates
+#     # --------------------------------------------------
+
+#     crop_x1 = max(0, x_s)
+#     crop_y1 = max(0, y_s)
+#     crop_x2 = min(image.shape[1], x_e)
+#     crop_y2 = min(image.shape[0], y_e)
+
+#     offset_x = x - x_s
+#     offset_y = y - y_s
+
+#     face_w = x1 - x
+#     face_h = y1 - y
+
+#     # --------------------------------------------------
+#     # Crop
+#     # --------------------------------------------------
+
+#     crop = image[
+#         crop_y1:crop_y2,
+#         crop_x1:crop_x2
+#     ].copy()
+
+#     # --------------------------------------------------
+#     # Insert generated face
+#     # --------------------------------------------------
+
+#     local_x1 = offset_x
+#     local_y1 = offset_y
+
+#     src_x1 = max(0, -local_x1)
+#     src_y1 = max(0, -local_y1)
+
+#     src_x2 = min(
+#         face_w,
+#         crop.shape[1] - local_x1
+#     )
+
+#     src_y2 = min(
+#         face_h,
+#         crop.shape[0] - local_y1
+#     )
+
+#     if src_x2 > src_x1 and src_y2 > src_y1:
+
+#         dst_x1 = max(0, local_x1)
+#         dst_y1 = max(0, local_y1)
+
+#         crop[
+#             dst_y1:dst_y1 + (src_y2 - src_y1),
+#             dst_x1:dst_x1 + (src_x2 - src_x1)
+#         ] = face[
+#             src_y1:src_y2,
+#             src_x1:src_x2
+#         ]
+
+#     # --------------------------------------------------
+#     # Prepare mask
+#     # --------------------------------------------------
+
+#     mask = mask_array
+
+#     if mask.shape[:2] != crop.shape[:2]:
+#         mask = cv2.resize(
+#             mask,
+#             (crop.shape[1], crop.shape[0]),
+#             interpolation=cv2.INTER_LINEAR
+#         )
+
+#     # --------------------------------------------------
+#     # Integer blending
+#     # --------------------------------------------------
+
+#     # uint8 -> uint16 to avoid overflow
+#     mask16 = mask.astype(np.uint16)
+
+#     inv_mask16 = 255 - mask16
+
+#     crop16 = crop.astype(np.uint16)
+
+#     original16 = image[
+#         crop_y1:crop_y2,
+#         crop_x1:crop_x2
+#     ].astype(np.uint16)
+
+#     # Add channel dimension
+#     mask16 = mask16[..., None]
+#     inv_mask16 = inv_mask16[..., None]
+
+#     blended = (
+#         crop16 * mask16
+#         + original16 * inv_mask16
+#     ) // 255
+
+#     blended = blended.astype(np.uint8)
+
+#     # --------------------------------------------------
+#     # Put crop back
+#     # --------------------------------------------------
+
+#     output = image.copy()
+
+#     output[
+#         crop_y1:crop_y2,
+#         crop_x1:crop_x2
+#     ] = blended
+
+#     return output
+
 def get_image_blending(image, face, face_box, mask_array, crop_box):
 
     x, y, x1, y1 = face_box
     x_s, y_s, x_e, y_e = crop_box
-
-    # --------------------------------------------------
-    # Crop coordinates
-    # --------------------------------------------------
 
     crop_x1 = max(0, x_s)
     crop_y1 = max(0, y_s)
@@ -428,18 +539,10 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
     face_w = x1 - x
     face_h = y1 - y
 
-    # --------------------------------------------------
-    # Crop
-    # --------------------------------------------------
-
     crop = image[
         crop_y1:crop_y2,
         crop_x1:crop_x2
     ].copy()
-
-    # --------------------------------------------------
-    # Insert generated face
-    # --------------------------------------------------
 
     local_x1 = offset_x
     local_y1 = offset_y
@@ -470,27 +573,62 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
             src_x1:src_x2
         ]
 
-    # --------------------------------------------------
-    # Prepare mask
-    # --------------------------------------------------
+    # =========================================================
+    # MASK CACHE
+    # =========================================================
 
-    mask = mask_array
+    # Cache directement sur l'objet numpy original.
+    # On utilise un attribut externe via dictionnaire global.
+    global _MASK_CACHE
 
-    if mask.shape[:2] != crop.shape[:2]:
-        mask = cv2.resize(
-            mask,
+    try:
+        _MASK_CACHE
+    except NameError:
+        _MASK_CACHE = {}
+
+    mask_key = id(mask_array)
+
+    cached = _MASK_CACHE.get(mask_key)
+
+    if cached is None:
+
+        mask16 = mask_array.astype(np.uint16)
+        inv_mask16 = 255 - mask16
+
+        # Ajouter la dimension des canaux une seule fois
+        mask16 = mask16[..., None]
+        inv_mask16 = inv_mask16[..., None]
+
+        cached = (mask16, inv_mask16)
+
+        _MASK_CACHE[mask_key] = cached
+
+    else:
+        mask16, inv_mask16 = cached
+
+    # =========================================================
+    # RESIZE DU MASQUE
+    # =========================================================
+
+    # Normalement le masque est déjà de la bonne taille.
+    # On conserve cette sécurité.
+    if mask16.shape[:2] != crop.shape[:2]:
+
+        mask_resized = cv2.resize(
+            mask_array,
             (crop.shape[1], crop.shape[0]),
             interpolation=cv2.INTER_LINEAR
         )
 
-    # --------------------------------------------------
-    # Integer blending
-    # --------------------------------------------------
+        mask16 = mask_resized.astype(np.uint16)
+        inv_mask16 = 255 - mask16
 
-    # uint8 -> uint16 to avoid overflow
-    mask16 = mask.astype(np.uint16)
+        mask16 = mask16[..., None]
+        inv_mask16 = inv_mask16[..., None]
 
-    inv_mask16 = 255 - mask16
+    # =========================================================
+    # BLENDING INTEGER
+    # =========================================================
 
     crop16 = crop.astype(np.uint16)
 
@@ -499,10 +637,6 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
         crop_x1:crop_x2
     ].astype(np.uint16)
 
-    # Add channel dimension
-    mask16 = mask16[..., None]
-    inv_mask16 = inv_mask16[..., None]
-
     blended = (
         crop16 * mask16
         + original16 * inv_mask16
@@ -510,9 +644,9 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
 
     blended = blended.astype(np.uint8)
 
-    # --------------------------------------------------
-    # Put crop back
-    # --------------------------------------------------
+    # =========================================================
+    # OUTPUT
+    # =========================================================
 
     output = image.copy()
 
