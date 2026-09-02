@@ -782,6 +782,17 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
     # ---------------------------------------------------------
 
     if mask_array.shape[:2] != crop.shape[:2]:
+
+        print("\n========== MASK/CROP DEBUG ==========")
+        print(f"image shape       : {image.shape}")
+        print(f"face_box          : {face_box}")
+        print(f"crop_box          : {crop_box}")
+        print(f"crop actual       : {crop.shape}")
+        print(f"mask actual       : {mask_array.shape}")
+        print(f"crop coords       : ({crop_x1}, {crop_y1}) -> ({crop_x2}, {crop_y2})")
+        print(f"theoretical size  : ({y_e-y_s}, {x_e-x_s})")
+        print(f"mask_bbox         : {mask_bbox}")
+        print("====================================\n")
         raise RuntimeError(
         f"Mask/crop mismatch: "
         f"mask={mask_array.shape[:2]}, "
