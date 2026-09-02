@@ -607,20 +607,56 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
         mask16, inv_mask16 = cached
 
 
+    # if mask_array.size > 0:
+    #     nonzero_ratio = np.count_nonzero(mask_array) / mask_array.size
+
+    #     if not hasattr(get_image_blending, "_debug_count"):
+    #         get_image_blending._debug_count = 0
+
+    #     if get_image_blending._debug_count < 10:
+    #         print(
+    #             f"[MASK] shape={mask_array.shape} "
+    #             f"nonzero={nonzero_ratio * 100:.2f}% "
+    #             f"min={mask_array.min()} "
+    #             f"max={mask_array.max()}"
+    #         )
+    #         get_image_blending._debug_count += 1
+
     if mask_array.size > 0:
-        nonzero_ratio = np.count_nonzero(mask_array) / mask_array.size
 
-        if not hasattr(get_image_blending, "_debug_count"):
-            get_image_blending._debug_count = 0
+        ys, xs = np.where(mask_array > 0)
 
-        if get_image_blending._debug_count < 10:
-            print(
-                f"[MASK] shape={mask_array.shape} "
-                f"nonzero={nonzero_ratio * 100:.2f}% "
-                f"min={mask_array.min()} "
-                f"max={mask_array.max()}"
-            )
-            get_image_blending._debug_count += 1
+        if len(xs) > 0:
+
+            bbox_x1 = xs.min()
+            bbox_y1 = ys.min()
+            bbox_x2 = xs.max() + 1
+            bbox_y2 = ys.max() + 1
+
+            bbox_w = bbox_x2 - bbox_x1
+            bbox_h = bbox_y2 - bbox_y1
+
+            full_area = mask_array.shape[0] * mask_array.shape[1]
+            bbox_area = bbox_w * bbox_h
+
+            nonzero_ratio = np.count_nonzero(mask_array) / full_area
+            bbox_ratio = bbox_area / full_area
+
+            if not hasattr(get_image_blending, "_debug_count"):
+                get_image_blending._debug_count = 0
+
+            if get_image_blending._debug_count < 10:
+
+                print(
+                    f"[MASK] "
+                    f"shape={mask_array.shape} "
+                    f"nonzero={nonzero_ratio * 100:.2f}% "
+                    f"bbox={bbox_w}x{bbox_h} "
+                    f"bbox_area={bbox_ratio * 100:.2f}% "
+                    f"bbox=({bbox_x1},{bbox_y1})-({bbox_x2},{bbox_y2})"
+                )
+
+                get_image_blending._debug_count += 1
 
     # =========================================================
     # RESIZE DU MASQUE
