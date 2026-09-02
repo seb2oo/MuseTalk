@@ -221,17 +221,97 @@ class Avatar:
                 else:
                     sys.exit()
             else:
-                self.input_latent_list_cycle = torch.load(self.latents_out_path)
-                with open(self.coords_path, 'rb') as f:
-                    self.coord_list_cycle = pickle.load(f)
-                input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
-                input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-                self.frame_list_cycle = read_imgs(input_img_list)
-                with open(self.mask_coords_path, 'rb') as f:
-                    self.mask_coords_list_cycle = pickle.load(f)
-                input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
-                input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-                self.mask_list_cycle = read_imgs(input_mask_list)
+                # self.input_latent_list_cycle = torch.load(self.latents_out_path)
+                # with open(self.coords_path, 'rb') as f:
+                #     self.coord_list_cycle = pickle.load(f)
+                # input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
+                # input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+                # self.frame_list_cycle = read_imgs(input_img_list)
+                # with open(self.mask_coords_path, 'rb') as f:
+                #     self.mask_coords_list_cycle = pickle.load(f)
+                # input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
+                # input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
+                # self.mask_list_cycle = read_imgs(input_mask_list)
+
+                ### NEW START ###
+                cache_path = os.path.join(self.avatar_path, "avatar_cache.pt")
+
+                if os.path.exists(cache_path):
+                    print(f"Loading avatar cache: {cache_path}")
+
+                    cache = torch.load(
+                        cache_path,
+                        map_location="cpu"
+                    )
+
+                    if (
+                        cache.get("video_path") != self.video_path
+                        or cache.get("bbox_shift") != self.bbox_shift
+                        or cache.get("version") != args.version
+                    ):
+                        raise RuntimeError(
+                            "Avatar cache is incompatible with current configuration."
+                        )
+
+                    self.frame_list_cycle = cache["frame_list_cycle"]
+                    self.mask_list_cycle = cache["mask_list_cycle"]
+                    self.coord_list_cycle = cache["coord_list_cycle"]
+                    self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
+                    self.input_latent_list_cycle = cache["input_latent_list_cycle"]
+
+                    print("Avatar cache loaded successfully.")
+
+                else:
+                    print("Avatar cache not found.")
+                    print("Falling back to loading individual files...")
+
+                    self.input_latent_list_cycle = torch.load(
+                        self.latents_out_path,
+                        map_location="cpu"
+                    )
+
+                    with open(self.coords_path, 'rb') as f:
+                        self.coord_list_cycle = pickle.load(f)
+
+                    input_img_list = glob.glob(
+                        os.path.join(
+                            self.full_imgs_path,
+                            '*.[jpJP][pnPN]*[gG]'
+                        )
+                    )
+
+                    input_img_list = sorted(
+                        input_img_list,
+                        key=lambda x: int(
+                            os.path.splitext(
+                                os.path.basename(x)
+                            )[0]
+                        )
+                    )
+
+                    self.frame_list_cycle = read_imgs(input_img_list)
+
+                    with open(self.mask_coords_path, 'rb') as f:
+                        self.mask_coords_list_cycle = pickle.load(f)
+
+                    input_mask_list = glob.glob(
+                        os.path.join(
+                            self.mask_out_path,
+                            '*.[jpJP][pnPN]*[gG]'
+                        )
+                    )
+
+                    input_mask_list = sorted(
+                        input_mask_list,
+                        key=lambda x: int(
+                            os.path.splitext(
+                                os.path.basename(x)
+                            )[0]
+                        )
+                    )
+
+                    self.mask_list_cycle = read_imgs(input_mask_list)
+                ### NEW END ###
 
     def prepare_material(self):
         print("preparing data materials ... ...")
