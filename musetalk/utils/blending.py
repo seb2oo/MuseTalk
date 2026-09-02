@@ -606,6 +606,22 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
     else:
         mask16, inv_mask16 = cached
 
+
+    if mask_array.size > 0:
+        nonzero_ratio = np.count_nonzero(mask_array) / mask_array.size
+
+        if not hasattr(get_image_blending, "_debug_count"):
+            get_image_blending._debug_count = 0
+
+        if get_image_blending._debug_count < 10:
+            print(
+                f"[MASK] shape={mask_array.shape} "
+                f"nonzero={nonzero_ratio * 100:.2f}% "
+                f"min={mask_array.min()} "
+                f"max={mask_array.max()}"
+            )
+            get_image_blending._debug_count += 1
+
     # =========================================================
     # RESIZE DU MASQUE
     # =========================================================
