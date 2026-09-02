@@ -1359,6 +1359,7 @@ if __name__ == "__main__":
 
     # Set computing device
     device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
+    torch.backends.cudnn.benchmark = True
     log_time("XXXYYY before load_all_model")# OK
     # Load model weights
     vae, unet, pe = load_all_model(
