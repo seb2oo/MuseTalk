@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import os
+import time
 
 class VAE():
     """
@@ -93,19 +94,59 @@ class VAE():
         init_latents = self.scaling_factor * init_latent_dist.sample()
         return init_latents
     
+    # def decode_latents(self, latents):
+    #     """
+    #     Decode latent variables back into an image.
+    #     :param latents: The latent variables to decode.
+    #     :return: A NumPy array representing the decoded image.
+    #     """
+    #     with torch.inference_mode():
+    #         latents = (1/  self.scaling_factor) * latents
+    #         image = self.vae.decode(latents.to(self.vae.dtype)).sample
+    #         image = (image / 2 + 0.5).clamp(0, 1)
+    #         image = image.detach().cpu().permute(0, 2, 3, 1).float().numpy()
+    #         image = (image * 255).round().astype("uint8")
+    #         image = image[...,::-1] # RGB to BGR
+    #     return image
     def decode_latents(self, latents):
-        """
-        Decode latent variables back into an image.
-        :param latents: The latent variables to decode.
-        :return: A NumPy array representing the decoded image.
-        """
+
         with torch.inference_mode():
-            latents = (1/  self.scaling_factor) * latents
-            image = self.vae.decode(latents.to(self.vae.dtype)).sample
+
+            latents = (1 / self.scaling_factor) * latents
+
+            torch.cuda.synchronize()
+            t0 = time.perf_counter()
+
+            image = self.vae.decode(
+                latents.to(self.vae.dtype)
+            ).sample
+
+            torch.cuda.synchronize()
+            t1 = time.perf_counter()
+
+            print(f"VAE DECODE GPU : {t1 - t0:.4f}s")
+
             image = (image / 2 + 0.5).clamp(0, 1)
-            image = image.detach().cpu().permute(0, 2, 3, 1).float().numpy()
-            image = (image * 255).round().astype("uint8")
-            image = image[...,::-1] # RGB to BGR
+
+            torch.cuda.synchronize()
+            t2 = time.perf_counter()
+
+            image = (
+                image
+                .permute(0, 2, 3, 1)
+                .mul(255)
+                .round()
+                .to(torch.uint8)
+                .cpu()
+                .numpy()
+            )
+
+            t3 = time.perf_counter()
+
+            print(f"VAE POST + CPU : {t3 - t2:.4f}s")
+
+            image = image[..., ::-1]
+
         return image
     
     def get_latents_for_unet(self,img):
