@@ -355,6 +355,8 @@ class Avatar:
         self.mask_coords_list_cycle = []
         self.mask_list_cycle = []
 
+        self.mask_bbox_list_cycle = []
+
         for i, frame in enumerate(tqdm(self.frame_list_cycle)):
             cv2.imwrite(f"{self.full_imgs_path}/{str(i).zfill(8)}.png", frame)
 
@@ -363,11 +365,12 @@ class Avatar:
                 mode = args.parsing_mode
             else:
                 mode = "raw"
-            mask, crop_box = get_image_prepare_material(frame, [x1, y1, x2, y2], fp=fp, mode=mode)
+            mask, crop_box,mask_bbox  = get_image_prepare_material(frame, [x1, y1, x2, y2], fp=fp, mode=mode)
 
             cv2.imwrite(f"{self.mask_out_path}/{str(i).zfill(8)}.png", mask)
             self.mask_coords_list_cycle += [crop_box]
             self.mask_list_cycle.append(mask)
+            self.mask_bbox_list_cycle.append(mask_bbox)
 
         with open(self.mask_coords_path, 'wb') as f:
             pickle.dump(self.mask_coords_list_cycle, f)
@@ -738,6 +741,30 @@ class Avatar:
             # 4. BLENDING
             # ======================================================
 
+            # start = time.perf_counter()
+
+            # mask = self.mask_list_cycle[
+            #     self.idx % len(self.mask_list_cycle)
+            # ]
+
+            # mask_crop_box = self.mask_coords_list_cycle[
+            #     self.idx % len(self.mask_coords_list_cycle)
+            # ]
+
+            # combine_frame = get_image_blending(
+            #     ori_frame,
+            #     res_frame,
+            #     bbox,
+            #     mask,
+            #     mask_crop_box
+            # )
+
+            # time_blending += time.perf_counter() - start
+
+            # ======================================================
+            # 4. BLENDING
+            # ======================================================
+
             start = time.perf_counter()
 
             mask = self.mask_list_cycle[
@@ -748,12 +775,17 @@ class Avatar:
                 self.idx % len(self.mask_coords_list_cycle)
             ]
 
+            mask_bbox = self.mask_bbox_list_cycle[
+                self.idx % len(self.mask_bbox_list_cycle)
+            ]
+
             combine_frame = get_image_blending(
                 ori_frame,
                 res_frame,
                 bbox,
                 mask,
-                mask_crop_box
+                mask_crop_box,
+                mask_bbox
             )
 
             time_blending += time.perf_counter() - start
