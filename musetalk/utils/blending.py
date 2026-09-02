@@ -714,7 +714,7 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
 
 
 
-def get_image_blending(image, face, face_box, mask_array, crop_box):
+def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
 
     x, y, x1, y1 = face_box
     x_s, y_s, x_e, y_e = crop_box
@@ -793,15 +793,20 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
     # 4. Trouver la bounding box du masque
     # ---------------------------------------------------------
 
-    ys, xs = np.where(mask_array > 0)
+    # ys, xs = np.where(mask_array > 0)
 
-    if len(xs) == 0:
+    # if len(xs) == 0:
+    #     return image
+
+    # mask_x1 = xs.min()
+    # mask_y1 = ys.min()
+    # mask_x2 = xs.max() + 1
+    # mask_y2 = ys.max() + 1
+
+    if mask_bbox is None:
         return image
 
-    mask_x1 = xs.min()
-    mask_y1 = ys.min()
-    mask_x2 = xs.max() + 1
-    mask_y2 = ys.max() + 1
+    mask_x1, mask_y1, mask_x2, mask_y2 = mask_bbox
 
     # ---------------------------------------------------------
     # 5. Blending uniquement dans la bbox du masque
@@ -876,5 +881,25 @@ def get_image_prepare_material(image, face_box, upper_boundary_ratio=0.5, expand
     modified_mask_image.paste(mask_image.crop((0, top_boundary, width, height)), (0, top_boundary))
 
     blur_kernel_size = int(0.1 * ori_shape[0] // 2 * 2) + 1
-    mask_array = cv2.GaussianBlur(np.array(modified_mask_image), (blur_kernel_size, blur_kernel_size), 0)
-    return mask_array, crop_box
+    # mask_array = cv2.GaussianBlur(np.array(modified_mask_image), (blur_kernel_size, blur_kernel_size), 0)
+    # return mask_array, crop_box
+    mask_array = cv2.GaussianBlur(
+        np.array(modified_mask_image),
+        (blur_kernel_size, blur_kernel_size),
+        0
+    )
+
+    # Calcul de la bbox du masque UNE SEULE FOIS
+    ys, xs = np.where(mask_array > 0)
+
+    if len(xs) > 0:
+        mask_bbox = (
+            xs.min(),
+            ys.min(),
+            xs.max() + 1,
+            ys.max() + 1
+        )
+    else:
+        mask_bbox = None
+
+    return mask_array, crop_box, mask_bbox

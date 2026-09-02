@@ -92,6 +92,25 @@ class Avatar:
         self.idx = 0
         self.init()
 
+    def prepare_mask_bboxes(self):
+        self.mask_bbox_list_cycle = []
+
+        for mask in self.mask_list_cycle:
+
+            ys, xs = np.where(mask > 0)
+
+            if len(xs) > 0:
+                mask_bbox = (
+                    xs.min(),
+                    ys.min(),
+                    xs.max() + 1,
+                    ys.max() + 1
+                )
+            else:
+                mask_bbox = None
+
+            self.mask_bbox_list_cycle.append(mask_bbox)
+
     def init(self):
         if self.preparation:
             if os.path.exists(self.avatar_path):
@@ -141,6 +160,9 @@ class Avatar:
                         self.coord_list_cycle = cache["coord_list_cycle"]
                         self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
                         self.input_latent_list_cycle = cache["input_latent_list_cycle"]
+
+                        # Calculate mask bboxes once from cached masks
+                        self.prepare_mask_bboxes()
 
                         print("Avatar cache loaded successfully.")
 
@@ -194,6 +216,8 @@ class Avatar:
                         )
 
                         self.mask_list_cycle = read_imgs(input_mask_list)
+                        # Calculate mask bboxes once
+                        self.prepare_mask_bboxes()
                     ### NEW END ###
             else:
                 print("*********************************")
@@ -259,6 +283,9 @@ class Avatar:
                     self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
                     self.input_latent_list_cycle = cache["input_latent_list_cycle"]
 
+                    # Calculate mask bboxes once from cached masks
+                    self.prepare_mask_bboxes()
+
                     print("Avatar cache loaded successfully.")
 
                 else:
@@ -311,6 +338,24 @@ class Avatar:
                     )
 
                     self.mask_list_cycle = read_imgs(input_mask_list)
+                    # Calculate mask bboxes once
+                    self.mask_bbox_list_cycle = []
+
+                    for mask in self.mask_list_cycle:
+
+                        ys, xs = np.where(mask > 0)
+
+                        if len(xs) > 0:
+                            mask_bbox = (
+                                xs.min(),
+                                ys.min(),
+                                xs.max() + 1,
+                                ys.max() + 1
+                            )
+                        else:
+                            mask_bbox = None
+
+                        self.mask_bbox_list_cycle.append(mask_bbox)
                 ### NEW END ###
 
     def prepare_material(self):
