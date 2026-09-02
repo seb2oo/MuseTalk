@@ -855,7 +855,7 @@ class Avatar:
         )
         print(f"processing audio:{audio_path} costs {(time.time() - start_time) * 1000}ms")
         ############################################## inference batch by batch ##############################################
-        # video_num = len(whisper_chunks)
+        video_num = len(whisper_chunks)
         # res_frame_queue = queue.Queue()
         # self.idx = 0
         # # Create a sub-thread and start it
