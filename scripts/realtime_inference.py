@@ -397,36 +397,192 @@ class Avatar:
         print(f"Avatar cache saved to: {cache_path}")
         ### NEW END ###
 
+    # def process_frames(self, res_frame_queue, video_len, skip_save_images):
+    #     print(video_len)
+    #     time_queue = 0.0
+    #     time_copy = 0.0
+    #     time_resize = 0.0
+    #     time_blending = 0.0
+    #     time_save = 0.0
+
+    #     frames_processed = 0
+    #     while True:
+    #         if self.idx >= video_len - 1:
+    #             break
+    #         try:
+    #             start = time.time()
+    #             res_frame = res_frame_queue.get(block=True, timeout=1)
+    #         except queue.Empty:
+    #             continue
+
+    #         time_queue += time.perf_counter() - start
+
+    #         bbox = self.coord_list_cycle[self.idx % (len(self.coord_list_cycle))]
+    #         ### NEW START ###
+    #         # ori_frame = copy.deepcopy(self.frame_list_cycle[self.idx % (len(self.frame_list_cycle))])
+    #         ori_frame = self.frame_list_cycle[
+    #             self.idx % len(self.frame_list_cycle)
+    #         ]
+    #         ### NEW END ###
+    #         x1, y1, x2, y2 = bbox
+    #         try:
+    #             res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
+    #         except:
+    #             continue
+    #         mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
+    #         mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
+    #         combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
+
+    #         if skip_save_images is False:
+    #             cv2.imwrite(f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png", combine_frame)
+    #         self.idx = self.idx + 1
+
     def process_frames(self, res_frame_queue, video_len, skip_save_images):
+
         print(video_len)
+
+        time_queue = 0.0
+        time_copy = 0.0
+        time_resize = 0.0
+        time_blending = 0.0
+        time_save = 0.0
+
+        frames_processed = 0
+
         while True:
+
             if self.idx >= video_len - 1:
                 break
+
+            # ==========================================================
+            # 1. QUEUE
+            # ==========================================================
+
+            start = time.perf_counter()
+
             try:
-                start = time.time()
-                res_frame = res_frame_queue.get(block=True, timeout=1)
+                res_frame = res_frame_queue.get(
+                    block=True,
+                    timeout=1
+                )
             except queue.Empty:
                 continue
 
-            bbox = self.coord_list_cycle[self.idx % (len(self.coord_list_cycle))]
-            ### NEW START ###
-            # ori_frame = copy.deepcopy(self.frame_list_cycle[self.idx % (len(self.frame_list_cycle))])
+            time_queue += time.perf_counter() - start
+
+
+            # ==========================================================
+            # 2. PREPARATION / COPY
+            # ==========================================================
+
+            start = time.perf_counter()
+
+            bbox = self.coord_list_cycle[
+                self.idx % len(self.coord_list_cycle)
+            ]
+
             ori_frame = self.frame_list_cycle[
                 self.idx % len(self.frame_list_cycle)
             ]
-            ### NEW END ###
+
             x1, y1, x2, y2 = bbox
+
+            time_copy += time.perf_counter() - start
+
+
+            # ==========================================================
+            # 3. RESIZE
+            # ==========================================================
+
+            start = time.perf_counter()
+
             try:
-                res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
-            except:
+
+                res_frame = cv2.resize(
+                    res_frame.astype(np.uint8),
+                    (x2 - x1, y2 - y1)
+                )
+
+            except Exception:
                 continue
-            mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
-            mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
-            combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
+
+            time_resize += time.perf_counter() - start
+
+
+            # ==========================================================
+            # 4. BLENDING
+            # ==========================================================
+
+            start = time.perf_counter()
+
+            mask = self.mask_list_cycle[
+                self.idx % len(self.mask_list_cycle)
+            ]
+
+            mask_crop_box = self.mask_coords_list_cycle[
+                self.idx % len(self.mask_coords_list_cycle)
+            ]
+
+            combine_frame = get_image_blending(
+                ori_frame,
+                res_frame,
+                bbox,
+                mask,
+                mask_crop_box
+            )
+
+            time_blending += time.perf_counter() - start
+
+
+            # ==========================================================
+            # 5. SAVE PNG
+            # ==========================================================
 
             if skip_save_images is False:
-                cv2.imwrite(f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png", combine_frame)
-            self.idx = self.idx + 1
+
+                start = time.perf_counter()
+
+                cv2.imwrite(
+                    f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png",
+                    combine_frame
+                )
+
+                time_save += time.perf_counter() - start
+
+
+            self.idx += 1
+            frames_processed += 1
+
+
+        # ==============================================================
+        # RESULTS
+        # ==============================================================
+
+        print("\n")
+        print("==========================================")
+        print("        PROCESS_FRAMES PROFILING")
+        print("==========================================")
+
+        print(f"Frames processed : {frames_processed}")
+
+        print(f"QUEUE            : {time_queue:.4f} s")
+        print(f"COPY/PREP        : {time_copy:.4f} s")
+        print(f"RESIZE           : {time_resize:.4f} s")
+        print(f"BLENDING         : {time_blending:.4f} s")
+        print(f"SAVE PNG         : {time_save:.4f} s")
+
+        total = (
+            time_queue
+            + time_copy
+            + time_resize
+            + time_blending
+            + time_save
+        )
+
+        print("------------------------------------------")
+        print(f"TOTAL            : {total:.4f} s")
+        print("==========================================")
+        print("\n")
 
     @torch.no_grad()
     def inference(self, audio_path, out_vid_name, fps, skip_save_images):
