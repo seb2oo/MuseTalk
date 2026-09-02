@@ -523,10 +523,205 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
 
 #     return output
 
+
+
+
+# def get_image_blending(image, face, face_box, mask_array, crop_box):
+
+#     x, y, x1, y1 = face_box
+#     x_s, y_s, x_e, y_e = crop_box
+
+#     crop_x1 = max(0, x_s)
+#     crop_y1 = max(0, y_s)
+#     crop_x2 = min(image.shape[1], x_e)
+#     crop_y2 = min(image.shape[0], y_e)
+
+#     offset_x = x - x_s
+#     offset_y = y - y_s
+
+#     face_w = x1 - x
+#     face_h = y1 - y
+
+#     crop = image[
+#         crop_y1:crop_y2,
+#         crop_x1:crop_x2
+#     ].copy()
+
+#     local_x1 = offset_x
+#     local_y1 = offset_y
+
+#     src_x1 = max(0, -local_x1)
+#     src_y1 = max(0, -local_y1)
+
+#     src_x2 = min(
+#         face_w,
+#         crop.shape[1] - local_x1
+#     )
+
+#     src_y2 = min(
+#         face_h,
+#         crop.shape[0] - local_y1
+#     )
+
+#     if src_x2 > src_x1 and src_y2 > src_y1:
+
+#         dst_x1 = max(0, local_x1)
+#         dst_y1 = max(0, local_y1)
+
+#         crop[
+#             dst_y1:dst_y1 + (src_y2 - src_y1),
+#             dst_x1:dst_x1 + (src_x2 - src_x1)
+#         ] = face[
+#             src_y1:src_y2,
+#             src_x1:src_x2
+#         ]
+
+#     # =========================================================
+#     # MASK CACHE
+#     # =========================================================
+
+#     # Cache directement sur l'objet numpy original.
+#     # On utilise un attribut externe via dictionnaire global.
+#     global _MASK_CACHE
+
+#     try:
+#         _MASK_CACHE
+#     except NameError:
+#         _MASK_CACHE = {}
+
+#     mask_key = id(mask_array)
+
+#     cached = _MASK_CACHE.get(mask_key)
+
+#     if cached is None:
+
+#         mask16 = mask_array.astype(np.uint16)
+#         inv_mask16 = 255 - mask16
+
+#         # Ajouter la dimension des canaux une seule fois
+#         mask16 = mask16[..., None]
+#         inv_mask16 = inv_mask16[..., None]
+
+#         cached = (mask16, inv_mask16)
+
+#         _MASK_CACHE[mask_key] = cached
+
+#     else:
+#         mask16, inv_mask16 = cached
+
+
+#     # if mask_array.size > 0:
+#     #     nonzero_ratio = np.count_nonzero(mask_array) / mask_array.size
+
+#     #     if not hasattr(get_image_blending, "_debug_count"):
+#     #         get_image_blending._debug_count = 0
+
+#     #     if get_image_blending._debug_count < 10:
+#     #         print(
+#     #             f"[MASK] shape={mask_array.shape} "
+#     #             f"nonzero={nonzero_ratio * 100:.2f}% "
+#     #             f"min={mask_array.min()} "
+#     #             f"max={mask_array.max()}"
+#     #         )
+#     #         get_image_blending._debug_count += 1
+
+#     if mask_array.size > 0:
+
+#         ys, xs = np.where(mask_array > 0)
+
+#         if len(xs) > 0:
+
+#             bbox_x1 = xs.min()
+#             bbox_y1 = ys.min()
+#             bbox_x2 = xs.max() + 1
+#             bbox_y2 = ys.max() + 1
+
+#             bbox_w = bbox_x2 - bbox_x1
+#             bbox_h = bbox_y2 - bbox_y1
+
+#             full_area = mask_array.shape[0] * mask_array.shape[1]
+#             bbox_area = bbox_w * bbox_h
+
+#             nonzero_ratio = np.count_nonzero(mask_array) / full_area
+#             bbox_ratio = bbox_area / full_area
+
+#             if not hasattr(get_image_blending, "_debug_count"):
+#                 get_image_blending._debug_count = 0
+
+#             if get_image_blending._debug_count < 10:
+
+#                 print(
+#                     f"[MASK] "
+#                     f"shape={mask_array.shape} "
+#                     f"nonzero={nonzero_ratio * 100:.2f}% "
+#                     f"bbox={bbox_w}x{bbox_h} "
+#                     f"bbox_area={bbox_ratio * 100:.2f}% "
+#                     f"bbox=({bbox_x1},{bbox_y1})-({bbox_x2},{bbox_y2})"
+#                 )
+
+#                 get_image_blending._debug_count += 1
+
+#     # =========================================================
+#     # RESIZE DU MASQUE
+#     # =========================================================
+
+#     # Normalement le masque est déjà de la bonne taille.
+#     # On conserve cette sécurité.
+#     if mask16.shape[:2] != crop.shape[:2]:
+
+#         mask_resized = cv2.resize(
+#             mask_array,
+#             (crop.shape[1], crop.shape[0]),
+#             interpolation=cv2.INTER_LINEAR
+#         )
+
+#         mask16 = mask_resized.astype(np.uint16)
+#         inv_mask16 = 255 - mask16
+
+#         mask16 = mask16[..., None]
+#         inv_mask16 = inv_mask16[..., None]
+
+#     # =========================================================
+#     # BLENDING INTEGER
+#     # =========================================================
+
+#     crop16 = crop.astype(np.uint16)
+
+#     original16 = image[
+#         crop_y1:crop_y2,
+#         crop_x1:crop_x2
+#     ].astype(np.uint16)
+
+#     blended = (
+#         crop16 * mask16
+#         + original16 * inv_mask16
+#     ) // 255
+
+#     blended = blended.astype(np.uint8)
+
+#     # =========================================================
+#     # OUTPUT
+#     # =========================================================
+
+#     output = image.copy()
+
+#     output[
+#         crop_y1:crop_y2,
+#         crop_x1:crop_x2
+#     ] = blended
+
+#     return output
+
+
+
 def get_image_blending(image, face, face_box, mask_array, crop_box):
 
     x, y, x1, y1 = face_box
     x_s, y_s, x_e, y_e = crop_box
+
+    # ---------------------------------------------------------
+    # 1. Crop de la zone visage
+    # ---------------------------------------------------------
 
     crop_x1 = max(0, x_s)
     crop_y1 = max(0, y_s)
@@ -543,6 +738,10 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
         crop_y1:crop_y2,
         crop_x1:crop_x2
     ].copy()
+
+    # ---------------------------------------------------------
+    # 2. Paste du visage dans le crop
+    # ---------------------------------------------------------
 
     local_x1 = offset_x
     local_y1 = offset_y
@@ -565,6 +764,11 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
         dst_x1 = max(0, local_x1)
         dst_y1 = max(0, local_y1)
 
+        # crop[
+        #     dst_y1:dst_y1 + (src_y2 - src_y1),
+        #     dst_x1:dst_x1 + (src_y2 - src_y1)
+        # ]
+
         crop[
             dst_y1:dst_y1 + (src_y2 - src_y1),
             dst_x1:dst_x1 + (src_x2 - src_x1)
@@ -573,139 +777,78 @@ def get_image_blending(image, face, face_box, mask_array, crop_box):
             src_x1:src_x2
         ]
 
-    # =========================================================
-    # MASK CACHE
-    # =========================================================
+    # ---------------------------------------------------------
+    # 3. Resize mask si nécessaire
+    # ---------------------------------------------------------
 
-    # Cache directement sur l'objet numpy original.
-    # On utilise un attribut externe via dictionnaire global.
-    global _MASK_CACHE
+    if mask_array.shape[:2] != crop.shape[:2]:
 
-    try:
-        _MASK_CACHE
-    except NameError:
-        _MASK_CACHE = {}
-
-    mask_key = id(mask_array)
-
-    cached = _MASK_CACHE.get(mask_key)
-
-    if cached is None:
-
-        mask16 = mask_array.astype(np.uint16)
-        inv_mask16 = 255 - mask16
-
-        # Ajouter la dimension des canaux une seule fois
-        mask16 = mask16[..., None]
-        inv_mask16 = inv_mask16[..., None]
-
-        cached = (mask16, inv_mask16)
-
-        _MASK_CACHE[mask_key] = cached
-
-    else:
-        mask16, inv_mask16 = cached
-
-
-    # if mask_array.size > 0:
-    #     nonzero_ratio = np.count_nonzero(mask_array) / mask_array.size
-
-    #     if not hasattr(get_image_blending, "_debug_count"):
-    #         get_image_blending._debug_count = 0
-
-    #     if get_image_blending._debug_count < 10:
-    #         print(
-    #             f"[MASK] shape={mask_array.shape} "
-    #             f"nonzero={nonzero_ratio * 100:.2f}% "
-    #             f"min={mask_array.min()} "
-    #             f"max={mask_array.max()}"
-    #         )
-    #         get_image_blending._debug_count += 1
-
-    if mask_array.size > 0:
-
-        ys, xs = np.where(mask_array > 0)
-
-        if len(xs) > 0:
-
-            bbox_x1 = xs.min()
-            bbox_y1 = ys.min()
-            bbox_x2 = xs.max() + 1
-            bbox_y2 = ys.max() + 1
-
-            bbox_w = bbox_x2 - bbox_x1
-            bbox_h = bbox_y2 - bbox_y1
-
-            full_area = mask_array.shape[0] * mask_array.shape[1]
-            bbox_area = bbox_w * bbox_h
-
-            nonzero_ratio = np.count_nonzero(mask_array) / full_area
-            bbox_ratio = bbox_area / full_area
-
-            if not hasattr(get_image_blending, "_debug_count"):
-                get_image_blending._debug_count = 0
-
-            if get_image_blending._debug_count < 10:
-
-                print(
-                    f"[MASK] "
-                    f"shape={mask_array.shape} "
-                    f"nonzero={nonzero_ratio * 100:.2f}% "
-                    f"bbox={bbox_w}x{bbox_h} "
-                    f"bbox_area={bbox_ratio * 100:.2f}% "
-                    f"bbox=({bbox_x1},{bbox_y1})-({bbox_x2},{bbox_y2})"
-                )
-
-                get_image_blending._debug_count += 1
-
-    # =========================================================
-    # RESIZE DU MASQUE
-    # =========================================================
-
-    # Normalement le masque est déjà de la bonne taille.
-    # On conserve cette sécurité.
-    if mask16.shape[:2] != crop.shape[:2]:
-
-        mask_resized = cv2.resize(
+        mask_array = cv2.resize(
             mask_array,
             (crop.shape[1], crop.shape[0]),
             interpolation=cv2.INTER_LINEAR
         )
 
-        mask16 = mask_resized.astype(np.uint16)
-        inv_mask16 = 255 - mask16
+    # ---------------------------------------------------------
+    # 4. Trouver la bounding box du masque
+    # ---------------------------------------------------------
 
-        mask16 = mask16[..., None]
-        inv_mask16 = inv_mask16[..., None]
+    ys, xs = np.where(mask_array > 0)
 
-    # =========================================================
-    # BLENDING INTEGER
-    # =========================================================
+    if len(xs) == 0:
+        return image
 
-    crop16 = crop.astype(np.uint16)
+    mask_x1 = xs.min()
+    mask_y1 = ys.min()
+    mask_x2 = xs.max() + 1
+    mask_y2 = ys.max() + 1
 
-    original16 = image[
-        crop_y1:crop_y2,
-        crop_x1:crop_x2
-    ].astype(np.uint16)
+    # ---------------------------------------------------------
+    # 5. Blending uniquement dans la bbox du masque
+    # ---------------------------------------------------------
+
+    mask_roi = mask_array[
+        mask_y1:mask_y2,
+        mask_x1:mask_x2
+    ]
+
+    crop_roi = crop[
+        mask_y1:mask_y2,
+        mask_x1:mask_x2
+    ]
+
+    original_roi = image[
+        crop_y1 + mask_y1:crop_y1 + mask_y2,
+        crop_x1 + mask_x1:crop_x1 + mask_x2
+    ]
+
+    # uint16 pour éviter le overflow uint8
+    mask16 = mask_roi.astype(np.uint16)[..., None]
+    inv_mask16 = (255 - mask_roi).astype(np.uint16)[..., None]
+
+    crop16 = crop_roi.astype(np.uint16)
+    original16 = original_roi.astype(np.uint16)
 
     blended = (
         crop16 * mask16
         + original16 * inv_mask16
     ) // 255
 
-    blended = blended.astype(np.uint8)
+    crop[
+        mask_y1:mask_y2,
+        mask_x1:mask_x2
+    ] = blended.astype(np.uint8)
 
-    # =========================================================
-    # OUTPUT
-    # =========================================================
+    # ---------------------------------------------------------
+    # 6. Remettre le crop dans l'image
+    # ---------------------------------------------------------
 
     output = image.copy()
 
     output[
         crop_y1:crop_y2,
         crop_x1:crop_x2
-    ] = blended
+    ] = crop
 
     return output
 
