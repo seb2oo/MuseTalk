@@ -1378,10 +1378,10 @@ if __name__ == "__main__":
     unet.model = unet.model.half().to(device)
     # unet.model = unet.model.half().to(device).eval()
 
-    vae.vae = torch.compile(
-    vae.vae,
-    mode="reduce-overhead"
-    )
+    # vae.vae = torch.compile(
+    # vae.vae,
+    # mode="reduce-overhead"
+    # )
 
 
     # Initialize audio processor and Whisper model
