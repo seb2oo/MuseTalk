@@ -723,58 +723,109 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
     # 1. Crop de la zone visage
     # ---------------------------------------------------------
 
+    # crop_x1 = max(0, x_s)
+    # crop_y1 = max(0, y_s)
+    # crop_x2 = min(image.shape[1], x_e)
+    # crop_y2 = min(image.shape[0], y_e)
+
+    # offset_x = x - x_s
+    # offset_y = y - y_s
+
+    # face_w = x1 - x
+    # face_h = y1 - y
+
+    # crop = image[
+    #     crop_y1:crop_y2,
+    #     crop_x1:crop_x2
+    # ].copy()
+
+    # 1. Crop
     crop_x1 = max(0, x_s)
     crop_y1 = max(0, y_s)
     crop_x2 = min(image.shape[1], x_e)
     crop_y2 = min(image.shape[0], y_e)
-
-    offset_x = x - x_s
-    offset_y = y - y_s
-
-    face_w = x1 - x
-    face_h = y1 - y
 
     crop = image[
         crop_y1:crop_y2,
         crop_x1:crop_x2
     ].copy()
 
+    # Mask coordinates relative to the actual clipped crop
+    mask_offset_x = crop_x1 - x_s
+    mask_offset_y = crop_y1 - y_s
+
+    mask_array = mask_array[
+        mask_offset_y:mask_offset_y + crop.shape[0],
+        mask_offset_x:mask_offset_x + crop.shape[1]
+    ]
+
     # ---------------------------------------------------------
     # 2. Paste du visage dans le crop
     # ---------------------------------------------------------
 
-    local_x1 = offset_x
-    local_y1 = offset_y
+    # local_x1 = offset_x
+    # local_y1 = offset_y
+
+    # src_x1 = max(0, -local_x1)
+    # src_y1 = max(0, -local_y1)
+
+    # src_x2 = min(
+    #     face_w,
+    #     crop.shape[1] - local_x1
+    # )
+
+    # src_y2 = min(
+    #     face_h,
+    #     crop.shape[0] - local_y1
+    # )
+
+    # if src_x2 > src_x1 and src_y2 > src_y1:
+
+    #     dst_x1 = max(0, local_x1)
+    #     dst_y1 = max(0, local_y1)
+
+    #     # crop[
+    #     #     dst_y1:dst_y1 + (src_y2 - src_y1),
+    #     #     dst_x1:dst_x1 + (src_y2 - src_y1)
+    #     # ]
+
+    #     crop[
+    #         dst_y1:dst_y1 + (src_y2 - src_y1),
+    #         dst_x1:dst_x1 + (src_x2 - src_x1)
+    #     ] = face[
+    #         src_y1:src_y2,
+    #         src_x1:src_x2
+    #     ]
+
+    # 2. Paste face
+    local_x1 = x - crop_x1
+    local_y1 = y - crop_y1
+
+    face_h, face_w = face.shape[:2]
 
     src_x1 = max(0, -local_x1)
     src_y1 = max(0, -local_y1)
 
-    src_x2 = min(
-        face_w,
-        crop.shape[1] - local_x1
+    dst_x1 = max(0, local_x1)
+    dst_y1 = max(0, local_y1)
+
+    paste_w = min(
+        face_w - src_x1,
+        crop.shape[1] - dst_x1
     )
 
-    src_y2 = min(
-        face_h,
-        crop.shape[0] - local_y1
+    paste_h = min(
+        face_h - src_y1,
+        crop.shape[0] - dst_y1
     )
 
-    if src_x2 > src_x1 and src_y2 > src_y1:
-
-        dst_x1 = max(0, local_x1)
-        dst_y1 = max(0, local_y1)
-
-        # crop[
-        #     dst_y1:dst_y1 + (src_y2 - src_y1),
-        #     dst_x1:dst_x1 + (src_y2 - src_y1)
-        # ]
-
+    if paste_w > 0 and paste_h > 0:
         crop[
-            dst_y1:dst_y1 + (src_y2 - src_y1),
-            dst_x1:dst_x1 + (src_x2 - src_x1)
+            dst_y1:dst_y1 + paste_h,
+            dst_x1:dst_x1 + paste_w
         ] = face[
-            src_y1:src_y2,
-            src_x1:src_x2
+            src_y1:src_y1 + paste_h,
+            src_x1:src_x1 + paste_w
         ]
 
     # ---------------------------------------------------------
@@ -819,10 +870,31 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
     # mask_x2 = xs.max() + 1
     # mask_y2 = ys.max() + 1
 
+    # if mask_bbox is None:
+    #     return image
+
+    # mask_x1, mask_y1, mask_x2, mask_y2 = mask_bbox
+
     if mask_bbox is None:
         return image
 
     mask_x1, mask_y1, mask_x2, mask_y2 = mask_bbox
+
+    # mask_bbox was defined in the original theoretical crop coordinates.
+    # Shift it to the actual clipped crop coordinates.
+    mask_x1 -= mask_offset_x
+    mask_x2 -= mask_offset_x
+    mask_y1 -= mask_offset_y
+    mask_y2 -= mask_offset_y
+
+    # Clip bbox to the actual crop
+    mask_x1 = max(0, mask_x1)
+    mask_y1 = max(0, mask_y1)
+    mask_x2 = min(crop.shape[1], mask_x2)
+    mask_y2 = min(crop.shape[0], mask_y2)
+
+    if mask_x2 <= mask_x1 or mask_y2 <= mask_y1:
+        return image
 
     # ---------------------------------------------------------
     # 5. Blending uniquement dans la bbox du masque
