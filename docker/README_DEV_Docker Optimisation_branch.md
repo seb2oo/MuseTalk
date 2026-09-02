@@ -213,6 +213,7 @@ ici parler des commandes git pour faire le merge final ! et que si on veut conti
 ************* CI DESSOUS TOUT CE QUI CONCERNE LE MODE  REAL-TIME *************
 
 # MuseTalk 1.5 (Recommended)
+cd MuseTalk
 python -m scripts.realtime_inference \
 --inference_config configs/inference/realtime.yaml \
 --result_dir results/realtime \
@@ -223,7 +224,7 @@ python -m scripts.realtime_inference \
 --batch_size 8 \
 --skip_save_images
 
-attention skip_iamge ne crée pas non plus le Mp4.... c'est pour le mode stremaing et donc l'envoi d'image en live
+attention skip_image ne crée pas non plus le Mp4.... c'est pour le mode stremaing et donc l'envoi d'image en live
 
 je suis reparti sur une nouvelle branche non plus dependnante de docker optimisation car on a fait trop de changement de code ..
 
