@@ -212,9 +212,10 @@ ici parler des commandes git pour faire le merge final ! et que si on veut conti
 
 ************* CI DESSOUS TOUT CE QUI CONCERNE LE MODE  REAL-TIME *************
 
+
 # MuseTalk 1.5 (Recommended)
 cd MuseTalk
-python -m scripts.realtime_inference \
+python -m scripts.realtime_inference[original_beforeServerlessOptimisation] \
 --inference_config configs/inference/realtime.yaml \
 --result_dir results/realtime \
 --unet_model_path models/musetalkV15/unet.pth \
@@ -252,6 +253,16 @@ git add docker/
 git commit -m "Restore docker configuration"
 ***
 
+
+
+***
+git status
+git add .
+git status
+git commit -m "changement d'inputs"
+git push -u origin realtime-clean
+***
+
 ***
 (récupération de ces changement depuis runpod)
 cd /workspace/MuseTalk
@@ -263,3 +274,11 @@ git pull origin realtime-clean
 ***
 attention a partir du commit : "improve  process_thread.join()"
 à un moment donné, skip_image change de fonction et devient : Ne sauvegarde pas les PNG individuels mais crée quand même le mp4
+
+
+
+*************** OK TOUT CE QUI TOUCHE LE SERVERLESS EST DECRIT CI DESSOUS ****************
+
+Dans la branche : serverless ! et on repart exactement de l'état actuelle !
+
+git switch -c serverless
