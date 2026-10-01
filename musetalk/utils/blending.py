@@ -474,21 +474,16 @@ def get_image_blending(
     if profile is not None:
         profile["astype_original"] += time.perf_counter() - t
 
-    # blended = np.empty_like(crop16, dtype=np.uint16)
+    blended = np.empty_like(crop16, dtype=np.uint16)
 
     t = time.perf_counter()
-    # for c in range(3):
-    #     blended[:, :, c] = (
-    #         crop16[:, :, c] * mask16
-    #         + original16[:, :, c] * (255 - mask16)
-    #     ) // 255
+    for c in range(3):
+        blended[:, :, c] = (
+            crop16[:, :, c] * mask16
+            + original16[:, :, c] * (255 - mask16)
+        ) // 255
 
-    blended = (
-    crop16 * mask16[..., None]
-    + original16 * (255 - mask16[..., None])
-    ) // 255
-
-
+   
 
     if profile is not None:
         profile["math"] += time.perf_counter() - t
@@ -569,7 +564,7 @@ def get_image_blending(
         profile["mask_check"] += t3 - t2
         profile["bbox"] += t4 - t3
         profile["roi"] += t5 - t4
-        profile["blend"] += t6 - t5
+       
         profile["write_roi"] += t_write_roi_end - t_write_roi_start
         profile["output_copy"] += t_output_end - t_output_start
 
