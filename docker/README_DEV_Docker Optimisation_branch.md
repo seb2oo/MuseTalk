@@ -209,6 +209,9 @@ ici parler des commandes git pour faire le merge final ! et que si on veut conti
 python app.py --use_float16 --ip 0.0.0.0 --port 7860
 
 
+
+git clone --branch realtime-clean https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
+
 ci-dessous la version realtime
 # MuseTalk 1.5 (Recommended)
 python -m scripts.realtime_inference \
@@ -221,4 +224,4 @@ python -m scripts.realtime_inference \
 --batch_size 8 \
 --skip_save_images
 
-attention skip_iamge ne crée pas non plus le Mp4....
+attention skip_image ne crée pas non plus le Mp4....
