@@ -493,7 +493,7 @@ class Avatar:
                 # --------------------------------------------------
 
                 "-c:v", "libx264",
-                "-preset", "veryfast",
+                "-preset", "ultrafast",
                 "-crf", "18",
                 "-pix_fmt", "yuv420p",
 
@@ -517,6 +517,7 @@ class Avatar:
             print(" ".join(cmd_ffmpeg))
             print()
 
+            ffmpeg_start_time = time.perf_counter()
             ffmpeg_process = subprocess.Popen(
                 cmd_ffmpeg,
                 stdin=subprocess.PIPE
@@ -663,6 +664,7 @@ class Avatar:
                 pass
 
             return_code = ffmpeg_process.wait()
+            ffmpeg_total_time = time.perf_counter() - ffmpeg_start_time
 
             if return_code != 0:
 
@@ -695,7 +697,7 @@ class Avatar:
             print(f"{key.upper():<16}: {value:.4f} s")
 
 
-
+        print(f"FFMPEG TOTAL     : {ffmpeg_total_time:.4f} s")
         total = (
             time_queue
             + time_copy
