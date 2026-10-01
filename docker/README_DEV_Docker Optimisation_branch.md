@@ -283,7 +283,8 @@ Dans la branche : serverless ! et on repart exactement de l'état actuelle !
 
 git switch -c serverless
 
-
+git switch realtime-clean
+git switch serverless
 
 ***
 git status
