@@ -450,16 +450,49 @@ def get_image_blending(
 
     t6 = time.perf_counter()
 
+
+
+
+
+    # crop[
+    #     mask_y1:mask_y2,
+    #     mask_x1:mask_x2
+    # ] = blended.astype(np.uint8)
+
+    # t7 = time.perf_counter()
+
+    # # ---------------------------------------------------------
+    # # 7. Output
+    # # ---------------------------------------------------------
+
+    # output = image.copy()
+
+    # output[
+    #     crop_y1:crop_y2,
+    #     crop_x1:crop_x2
+    # ] = crop
+
+    # t8 = time.perf_counter()
+
+
+    # ---------------------------------------------------------
+    # 6b. Write blended ROI
+    # ---------------------------------------------------------
+
+    t_write_roi_start = time.perf_counter()
+
     crop[
         mask_y1:mask_y2,
         mask_x1:mask_x2
     ] = blended.astype(np.uint8)
 
-    t7 = time.perf_counter()
+    t_write_roi_end = time.perf_counter()
 
     # ---------------------------------------------------------
     # 7. Output
     # ---------------------------------------------------------
+
+    t_output_start = time.perf_counter()
 
     output = image.copy()
 
@@ -468,7 +501,7 @@ def get_image_blending(
         crop_x1:crop_x2
     ] = crop
 
-    t8 = time.perf_counter()
+    t_output_end = time.perf_counter()
 
     # ---------------------------------------------------------
     # PROFILING
@@ -482,7 +515,8 @@ def get_image_blending(
         profile["bbox"] += t4 - t3
         profile["roi"] += t5 - t4
         profile["blend"] += t6 - t5
-        profile["write"] += (t7 - t6) + (t8 - t7)
+        profile["write_roi"] += t_write_roi_end - t_write_roi_start
+        profile["output_copy"] += t_output_end - t_output_start
 
     return output
 
