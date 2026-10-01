@@ -231,272 +231,7 @@ class Avatar:
 
         print("Legacy avatar data loaded successfully.")
 
-    # def init(self):
-    #     if self.preparation:
-    #         if os.path.exists(self.avatar_path):
-    #             response = input(f"{self.avatar_id} exists, Do you want to re-create it ? (y/n)")
-    #             if response.lower() == "y":
-    #                 shutil.rmtree(self.avatar_path)
-    #                 print("*********************************")
-    #                 print(f"  creating avator: {self.avatar_id}")
-    #                 print("*********************************")
-    #                 osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
-    #                 self.prepare_material()
-    #             else:
-    #                 # self.input_latent_list_cycle = torch.load(self.latents_out_path)
-    #                 # with open(self.coords_path, 'rb') as f:
-    #                 #     self.coord_list_cycle = pickle.load(f)
-    #                 # input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
-    #                 # input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-    #                 # self.frame_list_cycle = read_imgs(input_img_list)
-    #                 # with open(self.mask_coords_path, 'rb') as f:
-    #                 #     self.mask_coords_list_cycle = pickle.load(f)
-    #                 # input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
-    #                 # input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-    #                 # self.mask_list_cycle = read_imgs(input_mask_list)
-
-    #                 ### NEW START ###
-    #                 cache_path = os.path.join(self.avatar_path, "avatar_cache.pt")
-
-    #                 if os.path.exists(cache_path):
-    #                     print(f"Loading avatar cache: {cache_path}")
-
-    #                     cache = torch.load(
-    #                         cache_path,
-    #                         map_location="cpu"
-    #                     )
-
-    #                     if (
-    #                         cache.get("video_path") != self.video_path
-    #                         or cache.get("bbox_shift") != self.bbox_shift
-    #                         or cache.get("version") != args.version
-    #                     ):
-    #                         raise RuntimeError(
-    #                             "Avatar cache is incompatible with current configuration."
-    #                         )
-
-    #                     self.frame_list_cycle = cache["frame_list_cycle"]
-    #                     self.mask_list_cycle = cache["mask_list_cycle"]
-    #                     self.coord_list_cycle = cache["coord_list_cycle"]
-    #                     self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
-    #                     self.input_latent_list_cycle = cache["input_latent_list_cycle"]
-    #                     if "mask_bbox_list_cycle" in cache:
-    #                         self.mask_bbox_list_cycle = cache["mask_bbox_list_cycle"]
-    #                     else:
-    #                         print("Cache does not contain mask_bbox_list_cycle. Computing once...")
-    #                         self.prepare_mask_bboxes()
-
-    #                         cache["mask_bbox_list_cycle"] = self.mask_bbox_list_cycle
-    #                         torch.save(cache, self.avatar_cache_path)
-
-    #                         print("Avatar cache upgraded with mask_bbox_list_cycle.")
-
-    #                     # Calculate mask bboxes once from cached masks
-    #                     # self.prepare_mask_bboxes()
-
-    #                     print("Avatar cache loaded successfully.")
-
-    #                 else:
-    #                     print("Avatar cache not found.")
-    #                     print("Falling back to loading individual files...")
-
-    #                     self.input_latent_list_cycle = torch.load(
-    #                         self.latents_out_path,
-    #                         map_location="cpu"
-    #                     )
-
-    #                     with open(self.coords_path, 'rb') as f:
-    #                         self.coord_list_cycle = pickle.load(f)
-
-    #                     input_img_list = glob.glob(
-    #                         os.path.join(
-    #                             self.full_imgs_path,
-    #                             '*.[jpJP][pnPN]*[gG]'
-    #                         )
-    #                     )
-
-    #                     input_img_list = sorted(
-    #                         input_img_list,
-    #                         key=lambda x: int(
-    #                             os.path.splitext(
-    #                                 os.path.basename(x)
-    #                             )[0]
-    #                         )
-    #                     )
-
-    #                     self.frame_list_cycle = read_imgs(input_img_list)
-
-    #                     with open(self.mask_coords_path, 'rb') as f:
-    #                         self.mask_coords_list_cycle = pickle.load(f)
-
-    #                     input_mask_list = glob.glob(
-    #                         os.path.join(
-    #                             self.mask_out_path,
-    #                             '*.[jpJP][pnPN]*[gG]'
-    #                         )
-    #                     )
-
-    #                     input_mask_list = sorted(
-    #                         input_mask_list,
-    #                         key=lambda x: int(
-    #                             os.path.splitext(
-    #                                 os.path.basename(x)
-    #                             )[0]
-    #                         )
-    #                     )
-
-    #                     self.mask_list_cycle = read_imgs(input_mask_list)
-    #                     # Calculate mask bboxes once
-    #                     self.prepare_mask_bboxes()
-    #                 ### NEW END ###
-    #         else:
-    #             print("*********************************")
-    #             print(f"  creating avator: {self.avatar_id}")
-    #             print("*********************************")
-    #             osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
-    #             self.prepare_material()
-    #     else:
-    #         if not os.path.exists(self.avatar_path):
-    #             print(f"{self.avatar_id} does not exist, you should set preparation to True")
-    #             sys.exit()
-
-    #         with open(self.avatar_info_path, "r") as f:
-    #             avatar_info = json.load(f)
-
-    #         if avatar_info['bbox_shift'] != self.avatar_info['bbox_shift']:
-    #             response = input(f" 【bbox_shift】 is changed, you need to re-create it ! (c/continue)")
-    #             if response.lower() == "c":
-    #                 shutil.rmtree(self.avatar_path)
-    #                 print("*********************************")
-    #                 print(f"  creating avator: {self.avatar_id}")
-    #                 print("*********************************")
-    #                 osmakedirs([self.avatar_path, self.full_imgs_path, self.video_out_path, self.mask_out_path])
-    #                 self.prepare_material()
-    #             else:
-    #                 sys.exit()
-    #         else:
-    #             # self.input_latent_list_cycle = torch.load(self.latents_out_path)
-    #             # with open(self.coords_path, 'rb') as f:
-    #             #     self.coord_list_cycle = pickle.load(f)
-    #             # input_img_list = glob.glob(os.path.join(self.full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
-    #             # input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-    #             # self.frame_list_cycle = read_imgs(input_img_list)
-    #             # with open(self.mask_coords_path, 'rb') as f:
-    #             #     self.mask_coords_list_cycle = pickle.load(f)
-    #             # input_mask_list = glob.glob(os.path.join(self.mask_out_path, '*.[jpJP][pnPN]*[gG]'))
-    #             # input_mask_list = sorted(input_mask_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
-    #             # self.mask_list_cycle = read_imgs(input_mask_list)
-
-    #             ### NEW START ###
-    #             cache_path = os.path.join(self.avatar_path, "avatar_cache.pt")
-
-    #             if os.path.exists(cache_path):
-    #                 print(f"Loading avatar cache: {cache_path}")
-
-    #                 cache = torch.load(
-    #                     cache_path,
-    #                     map_location="cpu"
-    #                 )
-
-    #                 if (
-    #                     cache.get("video_path") != self.video_path
-    #                     or cache.get("bbox_shift") != self.bbox_shift
-    #                     or cache.get("version") != args.version
-    #                 ):
-    #                     raise RuntimeError(
-    #                         "Avatar cache is incompatible with current configuration."
-    #                     )
-
-    #                 self.frame_list_cycle = cache["frame_list_cycle"]
-    #                 self.mask_list_cycle = cache["mask_list_cycle"]
-    #                 self.coord_list_cycle = cache["coord_list_cycle"]
-    #                 self.mask_coords_list_cycle = cache["mask_coords_list_cycle"]
-    #                 self.input_latent_list_cycle = cache["input_latent_list_cycle"]
-    #                 if "mask_bbox_list_cycle" in cache:
-    #                     self.mask_bbox_list_cycle = cache["mask_bbox_list_cycle"]
-    #                 else:
-    #                     print("Cache does not contain mask_bbox_list_cycle. Computing once...")
-    #                     self.prepare_mask_bboxes()
-
-    #                     cache["mask_bbox_list_cycle"] = self.mask_bbox_list_cycle
-    #                     torch.save(cache, self.avatar_cache_path)
-
-    #                     print("Avatar cache upgraded with mask_bbox_list_cycle.")
-
-    #                 # Calculate mask bboxes once from cached masks
-    #                 # self.prepare_mask_bboxes()
-
-    #                 print("Avatar cache loaded successfully.")
-
-    #             else:
-    #                 print("Avatar cache not found.")
-    #                 print("Falling back to loading individual files...")
-
-    #                 self.input_latent_list_cycle = torch.load(
-    #                     self.latents_out_path,
-    #                     map_location="cpu"
-    #                 )
-
-    #                 with open(self.coords_path, 'rb') as f:
-    #                     self.coord_list_cycle = pickle.load(f)
-
-    #                 input_img_list = glob.glob(
-    #                     os.path.join(
-    #                         self.full_imgs_path,
-    #                         '*.[jpJP][pnPN]*[gG]'
-    #                     )
-    #                 )
-
-    #                 input_img_list = sorted(
-    #                     input_img_list,
-    #                     key=lambda x: int(
-    #                         os.path.splitext(
-    #                             os.path.basename(x)
-    #                         )[0]
-    #                     )
-    #                 )
-
-    #                 self.frame_list_cycle = read_imgs(input_img_list)
-
-    #                 with open(self.mask_coords_path, 'rb') as f:
-    #                     self.mask_coords_list_cycle = pickle.load(f)
-
-    #                 input_mask_list = glob.glob(
-    #                     os.path.join(
-    #                         self.mask_out_path,
-    #                         '*.[jpJP][pnPN]*[gG]'
-    #                     )
-    #                 )
-
-    #                 input_mask_list = sorted(
-    #                     input_mask_list,
-    #                     key=lambda x: int(
-    #                         os.path.splitext(
-    #                             os.path.basename(x)
-    #                         )[0]
-    #                     )
-    #                 )
-
-    #                 self.mask_list_cycle = read_imgs(input_mask_list)
-    #                 # Calculate mask bboxes once
-    #                 self.mask_bbox_list_cycle = []
-
-    #                 for mask in self.mask_list_cycle:
-
-    #                     ys, xs = np.where(mask > 0)
-
-    #                     if len(xs) > 0:
-    #                         mask_bbox = (
-    #                             xs.min(),
-    #                             ys.min(),
-    #                             xs.max() + 1,
-    #                             ys.max() + 1
-    #                         )
-    #                     else:
-    #                         mask_bbox = None
-
-    #                     self.mask_bbox_list_cycle.append(mask_bbox)
-    #             ### NEW END ###
+ 
 
     def init(self):
 
@@ -686,193 +421,7 @@ class Avatar:
         print(f"Avatar cache saved to: {cache_path}")
         ### NEW END ###
 
-    # def process_frames(self, res_frame_queue, video_len, skip_save_images):
-    #     print(video_len)
-    #     time_queue = 0.0
-    #     time_copy = 0.0
-    #     time_resize = 0.0
-    #     time_blending = 0.0
-    #     time_save = 0.0
-
-    #     frames_processed = 0
-    #     while True:
-    #         if self.idx >= video_len - 1:
-    #             break
-    #         try:
-    #             start = time.time()
-    #             res_frame = res_frame_queue.get(block=True, timeout=1)
-    #         except queue.Empty:
-    #             continue
-
-    #         time_queue += time.perf_counter() - start
-
-    #         bbox = self.coord_list_cycle[self.idx % (len(self.coord_list_cycle))]
-    #         ### NEW START ###
-    #         # ori_frame = copy.deepcopy(self.frame_list_cycle[self.idx % (len(self.frame_list_cycle))])
-    #         ori_frame = self.frame_list_cycle[
-    #             self.idx % len(self.frame_list_cycle)
-    #         ]
-    #         ### NEW END ###
-    #         x1, y1, x2, y2 = bbox
-    #         try:
-    #             res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
-    #         except:
-    #             continue
-    #         mask = self.mask_list_cycle[self.idx % (len(self.mask_list_cycle))]
-    #         mask_crop_box = self.mask_coords_list_cycle[self.idx % (len(self.mask_coords_list_cycle))]
-    #         combine_frame = get_image_blending(ori_frame,res_frame,bbox,mask,mask_crop_box)
-
-    #         if skip_save_images is False:
-    #             cv2.imwrite(f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png", combine_frame)
-    #         self.idx = self.idx + 1
-
-    # def process_frames(self, res_frame_queue, video_len, skip_save_images):
-
-    #     print(video_len)
-
-    #     time_queue = 0.0
-    #     time_copy = 0.0
-    #     time_resize = 0.0
-    #     time_blending = 0.0
-    #     time_save = 0.0
-
-    #     frames_processed = 0
-
-    #     while True:
-
-    #         if self.idx >= video_len - 1:
-    #             break
-
-    #         # ==========================================================
-    #         # 1. QUEUE
-    #         # ==========================================================
-
-    #         start = time.perf_counter()
-
-    #         try:
-    #             res_frame = res_frame_queue.get(
-    #                 block=True,
-    #                 timeout=1
-    #             )
-    #         except queue.Empty:
-    #             continue
-
-    #         time_queue += time.perf_counter() - start
-
-
-    #         # ==========================================================
-    #         # 2. PREPARATION / COPY
-    #         # ==========================================================
-
-    #         start = time.perf_counter()
-
-    #         bbox = self.coord_list_cycle[
-    #             self.idx % len(self.coord_list_cycle)
-    #         ]
-
-    #         ori_frame = self.frame_list_cycle[
-    #             self.idx % len(self.frame_list_cycle)
-    #         ]
-
-    #         x1, y1, x2, y2 = bbox
-
-    #         time_copy += time.perf_counter() - start
-
-
-    #         # ==========================================================
-    #         # 3. RESIZE
-    #         # ==========================================================
-
-    #         start = time.perf_counter()
-
-    #         try:
-
-    #             res_frame = cv2.resize(
-    #                 res_frame.astype(np.uint8),
-    #                 (x2 - x1, y2 - y1)
-    #             )
-
-    #         except Exception:
-    #             continue
-
-    #         time_resize += time.perf_counter() - start
-
-
-    #         # ==========================================================
-    #         # 4. BLENDING
-    #         # ==========================================================
-
-    #         start = time.perf_counter()
-
-    #         mask = self.mask_list_cycle[
-    #             self.idx % len(self.mask_list_cycle)
-    #         ]
-
-    #         mask_crop_box = self.mask_coords_list_cycle[
-    #             self.idx % len(self.mask_coords_list_cycle)
-    #         ]
-
-    #         combine_frame = get_image_blending(
-    #             ori_frame,
-    #             res_frame,
-    #             bbox,
-    #             mask,
-    #             mask_crop_box
-    #         )
-
-    #         time_blending += time.perf_counter() - start
-
-
-    #         # ==========================================================
-    #         # 5. SAVE PNG
-    #         # ==========================================================
-
-    #         if skip_save_images is False:
-
-    #             start = time.perf_counter()
-
-    #             cv2.imwrite(
-    #                 f"{self.avatar_path}/tmp/{str(self.idx).zfill(8)}.png",
-    #                 combine_frame
-    #             )
-
-    #             time_save += time.perf_counter() - start
-
-
-    #         self.idx += 1
-    #         frames_processed += 1
-
-
-    #     # ==============================================================
-    #     # RESULTS
-    #     # ==============================================================
-
-    #     print("\n")
-    #     print("==========================================")
-    #     print("        PROCESS_FRAMES PROFILING")
-    #     print("==========================================")
-
-    #     print(f"Frames processed : {frames_processed}")
-
-    #     print(f"QUEUE            : {time_queue:.4f} s")
-    #     print(f"COPY/PREP        : {time_copy:.4f} s")
-    #     print(f"RESIZE           : {time_resize:.4f} s")
-    #     print(f"BLENDING         : {time_blending:.4f} s")
-    #     print(f"SAVE PNG         : {time_save:.4f} s")
-
-    #     total = (
-    #         time_queue
-    #         + time_copy
-    #         + time_resize
-    #         + time_blending
-    #         + time_save
-    #     )
-
-    #     print("------------------------------------------")
-    #     print(f"TOTAL            : {total:.4f} s")
-    #     print("==========================================")
-    #     print("\n")
-
+    
     def process_frames(
         self,
         res_frame_queue,
@@ -892,6 +441,16 @@ class Avatar:
         time_ffmpeg = 0.0
 
         frames_processed = 0
+
+        blend_profile = {
+            "crop": 0.0,
+            "paste": 0.0,
+            "mask_check": 0.0,
+            "bbox": 0.0,
+            "roi": 0.0,
+            "blend": 0.0,
+            "write": 0.0,
+        }
 
         # ==========================================================
         # START ONE SINGLE FFMPEG PROCESS
@@ -1023,33 +582,6 @@ class Avatar:
 
             time_resize += time.perf_counter() - start
 
-            # ======================================================
-            # 4. BLENDING
-            # ======================================================
-
-            # start = time.perf_counter()
-
-            # mask = self.mask_list_cycle[
-            #     self.idx % len(self.mask_list_cycle)
-            # ]
-
-            # mask_crop_box = self.mask_coords_list_cycle[
-            #     self.idx % len(self.mask_coords_list_cycle)
-            # ]
-
-            # combine_frame = get_image_blending(
-            #     ori_frame,
-            #     res_frame,
-            #     bbox,
-            #     mask,
-            #     mask_crop_box
-            # )
-
-            # time_blending += time.perf_counter() - start
-
-            # ======================================================
-            # 4. BLENDING
-            # ======================================================
 
             start = time.perf_counter()
 
@@ -1071,7 +603,8 @@ class Avatar:
                 bbox,
                 mask,
                 mask_crop_box,
-                mask_bbox
+                mask_bbox,
+                profile=blend_profile
             )
 
             time_blending += time.perf_counter() - start
@@ -1139,6 +672,15 @@ class Avatar:
         print(f"RESIZE           : {time_resize:.4f} s")
         print(f"BLENDING         : {time_blending:.4f} s")
         print(f"FFMPEG WRITE     : {time_ffmpeg:.4f} s")
+
+        print("------------------------------------------")
+        print("        BLENDING BREAKDOWN")
+        print("------------------------------------------")
+
+        for key, value in blend_profile.items():
+            print(f"{key.upper():<16}: {value:.4f} s")
+
+
 
         total = (
             time_queue
@@ -1295,21 +837,7 @@ class Avatar:
                 time.time() - start_time))
         log_time("XXXYYY toto3") # OK
 
-        # if out_vid_name is not None and args.skip_save_images is False:
-        #     # optional
-        #     cmd_img2video = f"ffmpeg -y -v warning -r {fps} -f image2 -i {self.avatar_path}/tmp/%08d.png -vcodec libx264 -vf format=yuv420p -crf 18 {self.avatar_path}/temp.mp4"
-        #     print(cmd_img2video)
-        #     os.system(cmd_img2video)
-
-        #     output_vid = os.path.join(self.video_out_path, out_vid_name + ".mp4")  # on
-        #     cmd_combine_audio = f"ffmpeg -y -v warning -i {audio_path} -i {self.avatar_path}/temp.mp4 {output_vid}"
-        #     print(cmd_combine_audio)
-        #     os.system(cmd_combine_audio)
-
-        #     os.remove(f"{self.avatar_path}/temp.mp4")
-        #     shutil.rmtree(f"{self.avatar_path}/tmp")
-        #     print(f"result is save to {output_vid}")
-        # print("\n")
+    
         log_time("XXXYYY toto4") # NOK, takes too long !!
 
 

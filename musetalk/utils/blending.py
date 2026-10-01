@@ -94,652 +94,198 @@ def get_image(image, face, face_box, upper_boundary_ratio=0.5, expand=1.5, mode=
     return body[:, :, ::-1]  # 返回处理后的图像（BGR 转 RGB）
 
 
-# def get_image_blending(image, face, face_box, mask_array, crop_box):
-#     body = Image.fromarray(image[:,:,::-1])
-#     face = Image.fromarray(face[:,:,::-1])
 
-#     x, y, x1, y1 = face_box
-#     x_s, y_s, x_e, y_e = crop_box
-#     face_large = body.crop(crop_box)
-
-#     mask_image = Image.fromarray(mask_array)
-#     mask_image = mask_image.convert("L")
-#     face_large.paste(face, (x-x_s, y-y_s, x1-x_s, y1-y_s))
-#     body.paste(face_large, crop_box[:2], mask_image)
-#     body = np.array(body)
-#     return body[:,:,::-1]
-
-# def get_image_blending(image, face, face_box, mask_array, crop_box):
+# def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
 
 #     x, y, x1, y1 = face_box
 #     x_s, y_s, x_e, y_e = crop_box
 
-#     # --------------------------------------------------
-#     # Crop region
-#     # --------------------------------------------------
+#     # ---------------------------------------------------------
+#     # 1. Crop de la zone visage
+#     # ---------------------------------------------------------
 
+#     # crop_x1 = max(0, x_s)
+#     # crop_y1 = max(0, y_s)
+#     # crop_x2 = min(image.shape[1], x_e)
+#     # crop_y2 = min(image.shape[0], y_e)
+
+#     # offset_x = x - x_s
+#     # offset_y = y - y_s
+
+#     # face_w = x1 - x
+#     # face_h = y1 - y
+
+#     # crop = image[
+#     #     crop_y1:crop_y2,
+#     #     crop_x1:crop_x2
+#     # ].copy()
+
+#     # 1. Crop
 #     crop_x1 = max(0, x_s)
 #     crop_y1 = max(0, y_s)
 #     crop_x2 = min(image.shape[1], x_e)
 #     crop_y2 = min(image.shape[0], y_e)
-
-#     # Offset of face inside crop
-#     offset_x = x - x_s
-#     offset_y = y - y_s
-
-#     face_w = x1 - x
-#     face_h = y1 - y
-
-#     # --------------------------------------------------
-#     # Copy crop
-#     # --------------------------------------------------
 
 #     crop = image[
 #         crop_y1:crop_y2,
 #         crop_x1:crop_x2
 #     ].copy()
 
-#     # --------------------------------------------------
-#     # Insert generated face
-#     # --------------------------------------------------
+   
 
-#     local_x1 = offset_x
-#     local_y1 = offset_y
+#     # Mask coordinates relative to the actual clipped crop
+#     mask_offset_x = crop_x1 - x_s
+#     mask_offset_y = crop_y1 - y_s
 
-#     local_x2 = local_x1 + face_w
-#     local_y2 = local_y1 + face_h
-
-#     src_x1 = max(0, -local_x1)
-#     src_y1 = max(0, -local_y1)
-
-#     src_x2 = min(
-#         face_w,
-#         crop.shape[1] - local_x1
-#     )
-
-#     src_y2 = min(
-#         face_h,
-#         crop.shape[0] - local_y1
-#     )
-
-#     if src_x2 > src_x1 and src_y2 > src_y1:
-
-#         dst_x1 = max(0, local_x1)
-#         dst_y1 = max(0, local_y1)
-
-#         crop[
-#             dst_y1:dst_y1 + (src_y2 - src_y1),
-#             dst_x1:dst_x1 + (src_x2 - src_x1)
-#         ] = face[
-#             src_y1:src_y2,
-#             src_x1:src_x2
-#         ]
-
-#     # --------------------------------------------------
-#     # Blend
-#     # --------------------------------------------------
-
-#     mask = mask_array
-
-#     if mask.shape[:2] != crop.shape[:2]:
-#         mask = cv2.resize(
-#             mask,
-#             (crop.shape[1], crop.shape[0]),
-#             interpolation=cv2.INTER_LINEAR
-#         )
-
-#     mask = mask.astype(np.float32) / 255.0
-#     mask = mask[..., None]
-
-#     original_crop = image[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ].astype(np.float32)
-
-#     crop_float = crop.astype(np.float32)
-
-#     blended = (
-#         crop_float * mask
-#         + original_crop * (1.0 - mask)
-#     )
-
-#     blended = np.clip(
-#         blended,
-#         0,
-#         255
-#     ).astype(np.uint8)
-
-#     # --------------------------------------------------
-#     # Put crop back
-#     # --------------------------------------------------
-
-#     output = image.copy()
-
-#     output[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ] = blended
-
-#     return output
+#     mask_array = mask_array[
+#         mask_offset_y:mask_offset_y + crop.shape[0],
+#         mask_offset_x:mask_offset_x + crop.shape[1]
+#     ]
 
 
+#     # 2. Paste face
+#     local_x1 = x - crop_x1
+#     local_y1 = y - crop_y1
 
-
-# def get_image_blending(image, face, face_box, mask_array, crop_box):
-
-#     t0 = time.perf_counter()
-
-#     x, y, x1, y1 = face_box
-#     x_s, y_s, x_e, y_e = crop_box
-
-#     # --------------------------------------------------
-#     # 1. Crop coordinates
-#     # --------------------------------------------------
-
-#     crop_x1 = max(0, x_s)
-#     crop_y1 = max(0, y_s)
-#     crop_x2 = min(image.shape[1], x_e)
-#     crop_y2 = min(image.shape[0], y_e)
-
-#     offset_x = x - x_s
-#     offset_y = y - y_s
-
-#     face_w = x1 - x
-#     face_h = y1 - y
-
-#     t1 = time.perf_counter()
-
-#     # --------------------------------------------------
-#     # 2. Crop copy
-#     # --------------------------------------------------
-
-#     crop = image[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ].copy()
-
-#     t2 = time.perf_counter()
-
-#     # --------------------------------------------------
-#     # 3. Insert generated face
-#     # --------------------------------------------------
-
-#     local_x1 = offset_x
-#     local_y1 = offset_y
+#     face_h, face_w = face.shape[:2]
 
 #     src_x1 = max(0, -local_x1)
 #     src_y1 = max(0, -local_y1)
 
-#     src_x2 = min(
-#         face_w,
-#         crop.shape[1] - local_x1
+#     dst_x1 = max(0, local_x1)
+#     dst_y1 = max(0, local_y1)
+
+#     paste_w = min(
+#         face_w - src_x1,
+#         crop.shape[1] - dst_x1
 #     )
 
-#     src_y2 = min(
-#         face_h,
-#         crop.shape[0] - local_y1
+#     paste_h = min(
+#         face_h - src_y1,
+#         crop.shape[0] - dst_y1
 #     )
 
-#     if src_x2 > src_x1 and src_y2 > src_y1:
-
-#         dst_x1 = max(0, local_x1)
-#         dst_y1 = max(0, local_y1)
-
+#     if paste_w > 0 and paste_h > 0:
 #         crop[
-#             dst_y1:dst_y1 + (src_y2 - src_y1),
-#             dst_x1:dst_x1 + (src_x2 - src_x1)
+#             dst_y1:dst_y1 + paste_h,
+#             dst_x1:dst_x1 + paste_w
 #         ] = face[
-#             src_y1:src_y2,
-#             src_x1:src_x2
+#             src_y1:src_y1 + paste_h,
+#             src_x1:src_x1 + paste_w
 #         ]
 
-#     t3 = time.perf_counter()
+#     # ---------------------------------------------------------
+#     # 3. Resize mask si nécessaire
+#     # ---------------------------------------------------------
 
-#     # --------------------------------------------------
-#     # 4. Resize mask if necessary
-#     # --------------------------------------------------
+#     if mask_array.shape[:2] != crop.shape[:2]:
 
-#     mask = mask_array
-
-#     if mask.shape[:2] != crop.shape[:2]:
-#         mask = cv2.resize(
-#             mask,
-#             (crop.shape[1], crop.shape[0]),
-#             interpolation=cv2.INTER_LINEAR
+#         print("\n========== MASK/CROP DEBUG ==========")
+#         print(f"image shape       : {image.shape}")
+#         print(f"face_box          : {face_box}")
+#         print(f"crop_box          : {crop_box}")
+#         print(f"crop actual       : {crop.shape}")
+#         print(f"mask actual       : {mask_array.shape}")
+#         print(f"crop coords       : ({crop_x1}, {crop_y1}) -> ({crop_x2}, {crop_y2})")
+#         print(f"theoretical size  : ({y_e-y_s}, {x_e-x_s})")
+#         print(f"mask_bbox         : {mask_bbox}")
+#         print("====================================\n")
+#         raise RuntimeError(
+#         f"Mask/crop mismatch: "
+#         f"mask={mask_array.shape[:2]}, "
+#         f"crop={crop.shape[:2]}"
 #         )
 
-#     t4 = time.perf_counter()
 
-#     # --------------------------------------------------
-#     # 5. Mask conversion
-#     # --------------------------------------------------
+#     if mask_bbox is None:
+#         return image
 
-#     mask = mask.astype(np.float32) / 255.0
-#     mask = mask[..., None]
+#     mask_x1, mask_y1, mask_x2, mask_y2 = mask_bbox
 
-#     t5 = time.perf_counter()
+#     # mask_bbox was defined in the original theoretical crop coordinates.
+#     # Shift it to the actual clipped crop coordinates.
+#     mask_x1 -= mask_offset_x
+#     mask_x2 -= mask_offset_x
+#     mask_y1 -= mask_offset_y
+#     mask_y2 -= mask_offset_y
 
-#     # --------------------------------------------------
-#     # 6. Original crop conversion
-#     # --------------------------------------------------
+#     # Clip bbox to the actual crop
+#     mask_x1 = max(0, mask_x1)
+#     mask_y1 = max(0, mask_y1)
+#     mask_x2 = min(crop.shape[1], mask_x2)
+#     mask_y2 = min(crop.shape[0], mask_y2)
 
-#     original_crop = image[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ].astype(np.float32)
+#     if mask_x2 <= mask_x1 or mask_y2 <= mask_y1:
+#         return image
 
-#     t6 = time.perf_counter()
+#     # ---------------------------------------------------------
+#     # 5. Blending uniquement dans la bbox du masque
+#     # ---------------------------------------------------------
 
-#     # --------------------------------------------------
-#     # 7. Generated crop conversion
-#     # --------------------------------------------------
+#     mask_roi = mask_array[
+#         mask_y1:mask_y2,
+#         mask_x1:mask_x2
+#     ]
 
-#     crop_float = crop.astype(np.float32)
+#     crop_roi = crop[
+#         mask_y1:mask_y2,
+#         mask_x1:mask_x2
+#     ]
 
-#     t7 = time.perf_counter()
+#     original_roi = image[
+#         crop_y1 + mask_y1:crop_y1 + mask_y2,
+#         crop_x1 + mask_x1:crop_x1 + mask_x2
+#     ]
 
-#     # --------------------------------------------------
-#     # 8. Actual blend
-#     # --------------------------------------------------
+#     # uint16 pour éviter le overflow uint8
+#     mask16 = mask_roi.astype(np.uint16)[..., None]
+#     inv_mask16 = (255 - mask_roi).astype(np.uint16)[..., None]
 
-#     blended = (
-#         crop_float * mask
-#         + original_crop * (1.0 - mask)
-#     )
-
-#     t8 = time.perf_counter()
-
-#     # --------------------------------------------------
-#     # 9. Convert back uint8
-#     # --------------------------------------------------
-
-#     blended = np.clip(
-#         blended,
-#         0,
-#         255
-#     ).astype(np.uint8)
-
-#     t9 = time.perf_counter()
-
-#     # --------------------------------------------------
-#     # 10. Put crop back
-#     # --------------------------------------------------
-
-#     output = image.copy()
-
-#     t10 = time.perf_counter()
-
-#     output[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ] = blended
-
-#     t11 = time.perf_counter()
-
-#     # --------------------------------------------------
-#     # Profiling
-#     # --------------------------------------------------
-
-#     if not hasattr(get_image_blending, "_count"):
-#         get_image_blending._count = 0
-
-#     get_image_blending._count += 1
-
-#     if get_image_blending._count <= 10:
-
-#         print("\n========== BLENDING PROFILE ==========")
-
-#         print(f"Coordinates       : {(t1-t0)*1000:.3f} ms")
-#         print(f"Crop copy         : {(t2-t1)*1000:.3f} ms")
-#         print(f"Insert face       : {(t3-t2)*1000:.3f} ms")
-#         print(f"Mask resize       : {(t4-t3)*1000:.3f} ms")
-#         print(f"Mask float        : {(t5-t4)*1000:.3f} ms")
-#         print(f"Original float    : {(t6-t5)*1000:.3f} ms")
-#         print(f"Crop float        : {(t7-t6)*1000:.3f} ms")
-#         print(f"Blend calculation : {(t8-t7)*1000:.3f} ms")
-#         print(f"Uint8 conversion  : {(t9-t8)*1000:.3f} ms")
-#         print(f"Output copy       : {(t10-t9)*1000:.3f} ms")
-#         print(f"Final insertion   : {(t11-t10)*1000:.3f} ms")
-
-#         print("--------------------------------------")
-#         print(f"TOTAL             : {(t11-t0)*1000:.3f} ms")
-#         print("======================================")
-
-#     return output
-
-
-# def get_image_blending(image, face, face_box, mask_array, crop_box):
-
-#     x, y, x1, y1 = face_box
-#     x_s, y_s, x_e, y_e = crop_box
-
-#     # --------------------------------------------------
-#     # Crop coordinates
-#     # --------------------------------------------------
-
-#     crop_x1 = max(0, x_s)
-#     crop_y1 = max(0, y_s)
-#     crop_x2 = min(image.shape[1], x_e)
-#     crop_y2 = min(image.shape[0], y_e)
-
-#     offset_x = x - x_s
-#     offset_y = y - y_s
-
-#     face_w = x1 - x
-#     face_h = y1 - y
-
-#     # --------------------------------------------------
-#     # Crop
-#     # --------------------------------------------------
-
-#     crop = image[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ].copy()
-
-#     # --------------------------------------------------
-#     # Insert generated face
-#     # --------------------------------------------------
-
-#     local_x1 = offset_x
-#     local_y1 = offset_y
-
-#     src_x1 = max(0, -local_x1)
-#     src_y1 = max(0, -local_y1)
-
-#     src_x2 = min(
-#         face_w,
-#         crop.shape[1] - local_x1
-#     )
-
-#     src_y2 = min(
-#         face_h,
-#         crop.shape[0] - local_y1
-#     )
-
-#     if src_x2 > src_x1 and src_y2 > src_y1:
-
-#         dst_x1 = max(0, local_x1)
-#         dst_y1 = max(0, local_y1)
-
-#         crop[
-#             dst_y1:dst_y1 + (src_y2 - src_y1),
-#             dst_x1:dst_x1 + (src_x2 - src_x1)
-#         ] = face[
-#             src_y1:src_y2,
-#             src_x1:src_x2
-#         ]
-
-#     # --------------------------------------------------
-#     # Prepare mask
-#     # --------------------------------------------------
-
-#     mask = mask_array
-
-#     if mask.shape[:2] != crop.shape[:2]:
-#         mask = cv2.resize(
-#             mask,
-#             (crop.shape[1], crop.shape[0]),
-#             interpolation=cv2.INTER_LINEAR
-#         )
-
-#     # --------------------------------------------------
-#     # Integer blending
-#     # --------------------------------------------------
-
-#     # uint8 -> uint16 to avoid overflow
-#     mask16 = mask.astype(np.uint16)
-
-#     inv_mask16 = 255 - mask16
-
-#     crop16 = crop.astype(np.uint16)
-
-#     original16 = image[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ].astype(np.uint16)
-
-#     # Add channel dimension
-#     mask16 = mask16[..., None]
-#     inv_mask16 = inv_mask16[..., None]
+#     crop16 = crop_roi.astype(np.uint16)
+#     original16 = original_roi.astype(np.uint16)
 
 #     blended = (
 #         crop16 * mask16
 #         + original16 * inv_mask16
 #     ) // 255
 
-#     blended = blended.astype(np.uint8)
+#     crop[
+#         mask_y1:mask_y2,
+#         mask_x1:mask_x2
+#     ] = blended.astype(np.uint8)
 
-#     # --------------------------------------------------
-#     # Put crop back
-#     # --------------------------------------------------
-
-#     output = image.copy()
-
-#     output[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ] = blended
-
-#     return output
-
-
-
-
-# def get_image_blending(image, face, face_box, mask_array, crop_box):
-
-#     x, y, x1, y1 = face_box
-#     x_s, y_s, x_e, y_e = crop_box
-
-#     crop_x1 = max(0, x_s)
-#     crop_y1 = max(0, y_s)
-#     crop_x2 = min(image.shape[1], x_e)
-#     crop_y2 = min(image.shape[0], y_e)
-
-#     offset_x = x - x_s
-#     offset_y = y - y_s
-
-#     face_w = x1 - x
-#     face_h = y1 - y
-
-#     crop = image[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ].copy()
-
-#     local_x1 = offset_x
-#     local_y1 = offset_y
-
-#     src_x1 = max(0, -local_x1)
-#     src_y1 = max(0, -local_y1)
-
-#     src_x2 = min(
-#         face_w,
-#         crop.shape[1] - local_x1
-#     )
-
-#     src_y2 = min(
-#         face_h,
-#         crop.shape[0] - local_y1
-#     )
-
-#     if src_x2 > src_x1 and src_y2 > src_y1:
-
-#         dst_x1 = max(0, local_x1)
-#         dst_y1 = max(0, local_y1)
-
-#         crop[
-#             dst_y1:dst_y1 + (src_y2 - src_y1),
-#             dst_x1:dst_x1 + (src_x2 - src_x1)
-#         ] = face[
-#             src_y1:src_y2,
-#             src_x1:src_x2
-#         ]
-
-#     # =========================================================
-#     # MASK CACHE
-#     # =========================================================
-
-#     # Cache directement sur l'objet numpy original.
-#     # On utilise un attribut externe via dictionnaire global.
-#     global _MASK_CACHE
-
-#     try:
-#         _MASK_CACHE
-#     except NameError:
-#         _MASK_CACHE = {}
-
-#     mask_key = id(mask_array)
-
-#     cached = _MASK_CACHE.get(mask_key)
-
-#     if cached is None:
-
-#         mask16 = mask_array.astype(np.uint16)
-#         inv_mask16 = 255 - mask16
-
-#         # Ajouter la dimension des canaux une seule fois
-#         mask16 = mask16[..., None]
-#         inv_mask16 = inv_mask16[..., None]
-
-#         cached = (mask16, inv_mask16)
-
-#         _MASK_CACHE[mask_key] = cached
-
-#     else:
-#         mask16, inv_mask16 = cached
-
-
-#     # if mask_array.size > 0:
-#     #     nonzero_ratio = np.count_nonzero(mask_array) / mask_array.size
-
-#     #     if not hasattr(get_image_blending, "_debug_count"):
-#     #         get_image_blending._debug_count = 0
-
-#     #     if get_image_blending._debug_count < 10:
-#     #         print(
-#     #             f"[MASK] shape={mask_array.shape} "
-#     #             f"nonzero={nonzero_ratio * 100:.2f}% "
-#     #             f"min={mask_array.min()} "
-#     #             f"max={mask_array.max()}"
-#     #         )
-#     #         get_image_blending._debug_count += 1
-
-#     if mask_array.size > 0:
-
-#         ys, xs = np.where(mask_array > 0)
-
-#         if len(xs) > 0:
-
-#             bbox_x1 = xs.min()
-#             bbox_y1 = ys.min()
-#             bbox_x2 = xs.max() + 1
-#             bbox_y2 = ys.max() + 1
-
-#             bbox_w = bbox_x2 - bbox_x1
-#             bbox_h = bbox_y2 - bbox_y1
-
-#             full_area = mask_array.shape[0] * mask_array.shape[1]
-#             bbox_area = bbox_w * bbox_h
-
-#             nonzero_ratio = np.count_nonzero(mask_array) / full_area
-#             bbox_ratio = bbox_area / full_area
-
-#             if not hasattr(get_image_blending, "_debug_count"):
-#                 get_image_blending._debug_count = 0
-
-#             if get_image_blending._debug_count < 10:
-
-#                 print(
-#                     f"[MASK] "
-#                     f"shape={mask_array.shape} "
-#                     f"nonzero={nonzero_ratio * 100:.2f}% "
-#                     f"bbox={bbox_w}x{bbox_h} "
-#                     f"bbox_area={bbox_ratio * 100:.2f}% "
-#                     f"bbox=({bbox_x1},{bbox_y1})-({bbox_x2},{bbox_y2})"
-#                 )
-
-#                 get_image_blending._debug_count += 1
-
-#     # =========================================================
-#     # RESIZE DU MASQUE
-#     # =========================================================
-
-#     # Normalement le masque est déjà de la bonne taille.
-#     # On conserve cette sécurité.
-#     if mask16.shape[:2] != crop.shape[:2]:
-
-#         mask_resized = cv2.resize(
-#             mask_array,
-#             (crop.shape[1], crop.shape[0]),
-#             interpolation=cv2.INTER_LINEAR
-#         )
-
-#         mask16 = mask_resized.astype(np.uint16)
-#         inv_mask16 = 255 - mask16
-
-#         mask16 = mask16[..., None]
-#         inv_mask16 = inv_mask16[..., None]
-
-#     # =========================================================
-#     # BLENDING INTEGER
-#     # =========================================================
-
-#     crop16 = crop.astype(np.uint16)
-
-#     original16 = image[
-#         crop_y1:crop_y2,
-#         crop_x1:crop_x2
-#     ].astype(np.uint16)
-
-#     blended = (
-#         crop16 * mask16
-#         + original16 * inv_mask16
-#     ) // 255
-
-#     blended = blended.astype(np.uint8)
-
-#     # =========================================================
-#     # OUTPUT
-#     # =========================================================
+#     # ---------------------------------------------------------
+#     # 6. Remettre le crop dans l'image
+#     # ---------------------------------------------------------
 
 #     output = image.copy()
 
 #     output[
 #         crop_y1:crop_y2,
 #         crop_x1:crop_x2
-#     ] = blended
+#     ] = crop
 
 #     return output
 
-
-
-def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
+def get_image_blending(
+    image,
+    face,
+    face_box,
+    mask_array,
+    crop_box,
+    mask_bbox,
+    profile=None
+):
 
     x, y, x1, y1 = face_box
     x_s, y_s, x_e, y_e = crop_box
 
     # ---------------------------------------------------------
-    # 1. Crop de la zone visage
+    # 1. Crop
     # ---------------------------------------------------------
 
-    # crop_x1 = max(0, x_s)
-    # crop_y1 = max(0, y_s)
-    # crop_x2 = min(image.shape[1], x_e)
-    # crop_y2 = min(image.shape[0], y_e)
+    t0 = time.perf_counter()
 
-    # offset_x = x - x_s
-    # offset_y = y - y_s
-
-    # face_w = x1 - x
-    # face_h = y1 - y
-
-    # crop = image[
-    #     crop_y1:crop_y2,
-    #     crop_x1:crop_x2
-    # ].copy()
-
-    # 1. Crop
     crop_x1 = max(0, x_s)
     crop_y1 = max(0, y_s)
     crop_x2 = min(image.shape[1], x_e)
@@ -750,9 +296,6 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
         crop_x1:crop_x2
     ].copy()
 
-   
-
-    # Mask coordinates relative to the actual clipped crop
     mask_offset_x = crop_x1 - x_s
     mask_offset_y = crop_y1 - y_s
 
@@ -761,45 +304,12 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
         mask_offset_x:mask_offset_x + crop.shape[1]
     ]
 
+    t1 = time.perf_counter()
+
     # ---------------------------------------------------------
-    # 2. Paste du visage dans le crop
-    # ---------------------------------------------------------
-
-    # local_x1 = offset_x
-    # local_y1 = offset_y
-
-    # src_x1 = max(0, -local_x1)
-    # src_y1 = max(0, -local_y1)
-
-    # src_x2 = min(
-    #     face_w,
-    #     crop.shape[1] - local_x1
-    # )
-
-    # src_y2 = min(
-    #     face_h,
-    #     crop.shape[0] - local_y1
-    # )
-
-    # if src_x2 > src_x1 and src_y2 > src_y1:
-
-    #     dst_x1 = max(0, local_x1)
-    #     dst_y1 = max(0, local_y1)
-
-    #     # crop[
-    #     #     dst_y1:dst_y1 + (src_y2 - src_y1),
-    #     #     dst_x1:dst_x1 + (src_y2 - src_y1)
-    #     # ]
-
-    #     crop[
-    #         dst_y1:dst_y1 + (src_y2 - src_y1),
-    #         dst_x1:dst_x1 + (src_x2 - src_x1)
-    #     ] = face[
-    #         src_y1:src_y2,
-    #         src_x1:src_x2
-    #     ]
-
     # 2. Paste face
+    # ---------------------------------------------------------
+
     local_x1 = x - crop_x1
     local_y1 = y - crop_y1
 
@@ -830,8 +340,10 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
             src_x1:src_x1 + paste_w
         ]
 
+    t2 = time.perf_counter()
+
     # ---------------------------------------------------------
-    # 3. Resize mask si nécessaire
+    # 3. Check mask
     # ---------------------------------------------------------
 
     if mask_array.shape[:2] != crop.shape[:2]:
@@ -842,54 +354,39 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
         print(f"crop_box          : {crop_box}")
         print(f"crop actual       : {crop.shape}")
         print(f"mask actual       : {mask_array.shape}")
-        print(f"crop coords       : ({crop_x1}, {crop_y1}) -> ({crop_x2}, {crop_y2})")
-        print(f"theoretical size  : ({y_e-y_s}, {x_e-x_s})")
+        print(
+            f"crop coords       : "
+            f"({crop_x1}, {crop_y1}) -> ({crop_x2}, {crop_y2})"
+        )
+        print(
+            f"theoretical size  : "
+            f"({y_e-y_s}, {x_e-x_s})"
+        )
         print(f"mask_bbox         : {mask_bbox}")
         print("====================================\n")
+
         raise RuntimeError(
-        f"Mask/crop mismatch: "
-        f"mask={mask_array.shape[:2]}, "
-        f"crop={crop.shape[:2]}"
+            f"Mask/crop mismatch: "
+            f"mask={mask_array.shape[:2]}, "
+            f"crop={crop.shape[:2]}"
         )
 
-        # mask_array = cv2.resize(
-        #     mask_array,
-        #     (crop.shape[1], crop.shape[0]),
-        #     interpolation=cv2.INTER_LINEAR
-        # )
+    t3 = time.perf_counter()
 
     # ---------------------------------------------------------
-    # 4. Trouver la bounding box du masque
+    # 4. BBox
     # ---------------------------------------------------------
-
-    # ys, xs = np.where(mask_array > 0)
-
-    # if len(xs) == 0:
-    #     return image
-
-    # mask_x1 = xs.min()
-    # mask_y1 = ys.min()
-    # mask_x2 = xs.max() + 1
-    # mask_y2 = ys.max() + 1
-
-    # if mask_bbox is None:
-    #     return image
-
-    # mask_x1, mask_y1, mask_x2, mask_y2 = mask_bbox
 
     if mask_bbox is None:
         return image
 
     mask_x1, mask_y1, mask_x2, mask_y2 = mask_bbox
 
-    # mask_bbox was defined in the original theoretical crop coordinates.
-    # Shift it to the actual clipped crop coordinates.
     mask_x1 -= mask_offset_x
     mask_x2 -= mask_offset_x
     mask_y1 -= mask_offset_y
     mask_y2 -= mask_offset_y
 
-    # Clip bbox to the actual crop
     mask_x1 = max(0, mask_x1)
     mask_y1 = max(0, mask_y1)
     mask_x2 = min(crop.shape[1], mask_x2)
@@ -898,8 +395,10 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
     if mask_x2 <= mask_x1 or mask_y2 <= mask_y1:
         return image
 
+    t4 = time.perf_counter()
+
     # ---------------------------------------------------------
-    # 5. Blending uniquement dans la bbox du masque
+    # 5. Extract ROIs
     # ---------------------------------------------------------
 
     mask_roi = mask_array[
@@ -917,7 +416,12 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
         crop_x1 + mask_x1:crop_x1 + mask_x2
     ]
 
-    # uint16 pour éviter le overflow uint8
+    t5 = time.perf_counter()
+
+    # ---------------------------------------------------------
+    # 6. Blending
+    # ---------------------------------------------------------
+
     mask16 = mask_roi.astype(np.uint16)[..., None]
     inv_mask16 = (255 - mask_roi).astype(np.uint16)[..., None]
 
@@ -929,13 +433,17 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
         + original16 * inv_mask16
     ) // 255
 
+    t6 = time.perf_counter()
+
     crop[
         mask_y1:mask_y2,
         mask_x1:mask_x2
     ] = blended.astype(np.uint8)
 
+    t7 = time.perf_counter()
+
     # ---------------------------------------------------------
-    # 6. Remettre le crop dans l'image
+    # 7. Output
     # ---------------------------------------------------------
 
     output = image.copy()
@@ -944,6 +452,22 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
         crop_y1:crop_y2,
         crop_x1:crop_x2
     ] = crop
+
+    t8 = time.perf_counter()
+
+    # ---------------------------------------------------------
+    # PROFILING
+    # ---------------------------------------------------------
+
+    if profile is not None:
+
+        profile["crop"] += t1 - t0
+        profile["paste"] += t2 - t1
+        profile["mask_check"] += t3 - t2
+        profile["bbox"] += t4 - t3
+        profile["roi"] += t5 - t4
+        profile["blend"] += t6 - t5
+        profile["write"] += (t7 - t6) + (t8 - t7)
 
     return output
 
