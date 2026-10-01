@@ -215,7 +215,7 @@ ici parler des commandes git pour faire le merge final ! et que si on veut conti
 
 # MuseTalk 1.5 (Recommended)
 cd MuseTalk
-python -m scripts.realtime_inference[original_beforeServerlessOptimisation] \
+python -m scripts.realtime_inference \
 --inference_config configs/inference/realtime.yaml \
 --result_dir results/realtime \
 --unet_model_path models/musetalkV15/unet.pth \
