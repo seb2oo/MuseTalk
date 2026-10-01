@@ -4,6 +4,24 @@ import cv2
 import copy
 import time
 
+from numba import njit
+
+
+@njit(cache=True, fastmath=True)
+def blend_numba(crop16, original16, mask16, blended):
+    h, w, _ = crop16.shape
+
+    for y in range(h):
+        for x in range(w):
+            m = mask16[y, x]
+            inv_m = 255 - m
+
+            for c in range(3):
+                blended[y, x, c] = (
+                    crop16[y, x, c] * m
+                    + original16[y, x, c] * inv_m
+                ) // 255
+
 
 def get_crop_box(box, expand):
     x, y, x1, y1 = box
@@ -477,12 +495,13 @@ def get_image_blending(
     blended = np.empty_like(crop16, dtype=np.uint16)
 
     t = time.perf_counter()
-    for c in range(3):
-        blended[:, :, c] = (
-            crop16[:, :, c] * mask16
-            + original16[:, :, c] * (255 - mask16)
-        ) // 255
+    # for c in range(3):
+    #     blended[:, :, c] = (
+    #         crop16[:, :, c] * mask16
+    #         + original16[:, :, c] * (255 - mask16)
+    #     ) // 255
 
+    blend_numba(crop16, original16, mask16, blended)
    
 
     if profile is not None:
