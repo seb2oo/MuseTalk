@@ -282,3 +282,22 @@ attention a partir du commit : "improve  process_thread.join()"
 Dans la branche : serverless ! et on repart exactement de l'état actuelle !
 
 git switch -c serverless
+
+
+
+
+***
+git status
+git add .
+git status
+git commit -m "changement d'inputs"
+git push -u origin serverless
+***
+
+***
+(récupération de ces changement depuis runpod)
+cd /workspace/MuseTalk
+git fetch origin
+git checkout serverless
+git pull origin serverless
+***
