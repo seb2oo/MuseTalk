@@ -422,16 +422,31 @@ def get_image_blending(
     # 6. Blending
     # ---------------------------------------------------------
 
-    mask16 = mask_roi.astype(np.uint16)[..., None]
-    inv_mask16 = (255 - mask_roi).astype(np.uint16)[..., None]
+    # mask16 = mask_roi.astype(np.uint16)[..., None]
+    # inv_mask16 = (255 - mask_roi).astype(np.uint16)[..., None]
+
+    # crop16 = crop_roi.astype(np.uint16)
+    # original16 = original_roi.astype(np.uint16)
+
+    # blended = (
+    #     crop16 * mask16
+    #     + original16 * inv_mask16
+    # ) // 255
+
+    mask16 = mask_roi.astype(np.uint16)
 
     crop16 = crop_roi.astype(np.uint16)
     original16 = original_roi.astype(np.uint16)
 
-    blended = (
-        crop16 * mask16
-        + original16 * inv_mask16
-    ) // 255
+    # Blend channel-by-channel using OpenCV
+    blended = np.empty_like(crop16, dtype=np.uint16)
+
+    for c in range(3):
+        blended[:, :, c] = (
+            crop16[:, :, c] * mask16
+            + original16[:, :, c] * (255 - mask16)
+        ) // 255
+
 
     t6 = time.perf_counter()
 
