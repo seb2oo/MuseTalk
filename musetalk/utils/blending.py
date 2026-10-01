@@ -745,10 +745,17 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
     crop_x2 = min(image.shape[1], x_e)
     crop_y2 = min(image.shape[0], y_e)
 
-    crop = image[
+    # crop = image[
+    #     crop_y1:crop_y2,
+    #     crop_x1:crop_x2
+    # ].copy()
+
+    output = image.copy()
+
+    crop = output[
         crop_y1:crop_y2,
         crop_x1:crop_x2
-    ].copy()
+    ]
 
     # Mask coordinates relative to the actual clipped crop
     mask_offset_x = crop_x1 - x_s
@@ -936,12 +943,12 @@ def get_image_blending(image, face, face_box, mask_array, crop_box, mask_bbox):
     # 6. Remettre le crop dans l'image
     # ---------------------------------------------------------
 
-    output = image.copy()
+    # output = image.copy()
 
-    output[
-        crop_y1:crop_y2,
-        crop_x1:crop_x2
-    ] = crop
+    # output[
+    #     crop_y1:crop_y2,
+    #     crop_x1:crop_x2
+    # ] = crop
 
     return output
 
