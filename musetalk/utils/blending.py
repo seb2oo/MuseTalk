@@ -439,19 +439,54 @@ def get_image_blending(
     #     + original16 * inv_mask16
     # ) // 255
 
+
+
+
+    # mask16 = mask_roi.astype(np.uint16)
+
+    # crop16 = crop_roi.astype(np.uint16)
+    # original16 = original_roi.astype(np.uint16)
+
+    # # Blend channel-by-channel using OpenCV
+    # blended = np.empty_like(crop16, dtype=np.uint16)
+
+    # for c in range(3):
+    #     blended[:, :, c] = (
+    #         crop16[:, :, c] * mask16
+    #         + original16[:, :, c] * (255 - mask16)
+    #     ) // 255
+
+
+    t_blend = time.perf_counter()
+
+    t = time.perf_counter()
     mask16 = mask_roi.astype(np.uint16)
+    if profile is not None:
+        profile["astype_mask"] += time.perf_counter() - t
 
+    t = time.perf_counter()
     crop16 = crop_roi.astype(np.uint16)
-    original16 = original_roi.astype(np.uint16)
+    if profile is not None:
+        profile["astype_crop"] += time.perf_counter() - t
 
-    # Blend channel-by-channel using OpenCV
+    t = time.perf_counter()
+    original16 = original_roi.astype(np.uint16)
+    if profile is not None:
+        profile["astype_original"] += time.perf_counter() - t
+
     blended = np.empty_like(crop16, dtype=np.uint16)
 
+    t = time.perf_counter()
     for c in range(3):
         blended[:, :, c] = (
             crop16[:, :, c] * mask16
             + original16[:, :, c] * (255 - mask16)
         ) // 255
+    if profile is not None:
+        profile["math"] += time.perf_counter() - t
+
+    if profile is not None:
+        profile["blend"] += time.perf_counter() - t_blend
 
 
     t6 = time.perf_counter()

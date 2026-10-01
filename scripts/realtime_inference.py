@@ -451,6 +451,10 @@ class Avatar:
             "blend": 0.0,
             "write_roi": 0.0,
             "output_copy": 0.0,
+            "astype_mask": 0.0,
+            "astype_crop": 0.0,
+            "astype_original": 0.0,
+            "math": 0.0
         }
 
         # ==========================================================
