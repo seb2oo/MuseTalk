@@ -291,10 +291,17 @@ def get_image_blending(
     crop_x2 = min(image.shape[1], x_e)
     crop_y2 = min(image.shape[0], y_e)
 
+    # crop = image[
+    #     crop_y1:crop_y2,
+    #     crop_x1:crop_x2
+    # ].copy()
     crop = image[
-        crop_y1:crop_y2,
-        crop_x1:crop_x2
+    crop_y1:crop_y2,
+    crop_x1:crop_x2
     ].copy()
+
+    # Keep original crop so the cached frame can be restored
+    original_crop = crop.copy()
 
     mask_offset_x = crop_x1 - x_s
     mask_offset_y = crop_y1 - y_s
@@ -378,7 +385,7 @@ def get_image_blending(
     # ---------------------------------------------------------
 
     if mask_bbox is None:
-        return image
+        return image, None, None
 
     mask_x1, mask_y1, mask_x2, mask_y2 = mask_bbox
 
@@ -393,8 +400,7 @@ def get_image_blending(
     mask_y2 = min(crop.shape[0], mask_y2)
 
     if mask_x2 <= mask_x1 or mask_y2 <= mask_y1:
-        return image
-
+        return image, None, None
     t4 = time.perf_counter()
 
     # ---------------------------------------------------------
@@ -494,12 +500,18 @@ def get_image_blending(
 
     t_output_start = time.perf_counter()
 
-    output = image.copy()
+    # output = image.copy()
 
-    output[
+    # output[
+    #     crop_y1:crop_y2,
+    #     crop_x1:crop_x2
+    # ] = crop
+ 
+    image[
         crop_y1:crop_y2,
         crop_x1:crop_x2
     ] = crop
+    
 
     t_output_end = time.perf_counter()
 
@@ -518,7 +530,15 @@ def get_image_blending(
         profile["write_roi"] += t_write_roi_end - t_write_roi_start
         profile["output_copy"] += t_output_end - t_output_start
 
-    return output
+    
+
+  
+    return image, original_crop, (
+        crop_y1,
+        crop_y2,
+        crop_x1,
+        crop_x2
+        )
 
 
 def get_image_prepare_material(image, face_box, upper_boundary_ratio=0.5, expand=1.5, fp=None, mode="raw"):

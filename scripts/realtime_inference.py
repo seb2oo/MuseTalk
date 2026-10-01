@@ -598,7 +598,7 @@ class Avatar:
                 self.idx % len(self.mask_bbox_list_cycle)
             ]
 
-            combine_frame = get_image_blending(
+            combine_frame, original_crop, restore_coords = get_image_blending(
                 ori_frame,
                 res_frame,
                 bbox,
@@ -628,6 +628,15 @@ class Avatar:
 
                     print("ERROR: FFmpeg pipe closed unexpectedly.")
                     break
+
+                finally:
+                    if original_crop is not None:
+                        ry1, ry2, rx1, rx2 = restore_coords
+
+                        combine_frame[
+                            ry1:ry2,
+                            rx1:rx2
+                        ] = original_crop
 
                 time_ffmpeg += time.perf_counter() - start
 
