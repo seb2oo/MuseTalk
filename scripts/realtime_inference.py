@@ -492,9 +492,14 @@ class Avatar:
                 # VIDEO ENCODING
                 # --------------------------------------------------
 
-                "-c:v", "libx264",
-                "-preset", "ultrafast",
-                "-crf", "18",
+                # "-c:v", "libx264",
+                # "-preset", "ultrafast",
+                # "-crf", "18",
+                # "-pix_fmt", "yuv420p",
+
+                "-c:v", "h264_nvenc",
+                "-preset", "p1",
+                "-cq", "18",
                 "-pix_fmt", "yuv420p",
 
                 # --------------------------------------------------
