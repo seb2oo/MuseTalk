@@ -1,5 +1,5 @@
 avator_1:
- preparation: False # your can set it to False if you want to use the existing avator, it will save time
+ preparation: True # your can set it to False if you want to use the existing avator, it will save time
  video_path: "data/video/seb_image.mp4"
  audio_clips:
     audio_1: "data/audio/seb_audio.wav"

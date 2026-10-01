@@ -205,9 +205,11 @@ use cherry pick instead of merge to get a special commit !
 ici parler des commandes git pour faire le merge final ! et que si on veut continer avec une autre branche mais qui est dépendante des branches précedentes, alors il suffit simplement de créer la branch dans la branch que l'on a besoin
 ***
 
+# la version gradio non fonctionelle ! on a exposé un port sous runpod justement pour avoir accès au gradio
 python app.py --use_float16 --ip 0.0.0.0 --port 7860
 
 
+ci-dessous la version realtime
 # MuseTalk 1.5 (Recommended)
 python -m scripts.realtime_inference \
 --inference_config configs/inference/realtime.yaml \
