@@ -95,7 +95,7 @@ def run_command(command):
     print(f"[COMMAND] {command}")
 
     env = os.environ.copy()
-    env["PYTHONPATH"] = STR(PROJECT_DIR) + ":" + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = str(PROJECT_DIR) + ":" + env.get("PYTHONPATH", "")
 
     subprocess.run(
         command,
