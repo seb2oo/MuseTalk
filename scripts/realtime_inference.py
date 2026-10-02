@@ -613,7 +613,7 @@ class Avatar:
                 res_frame = cv2.resize(
                     res_frame,
                     (x2 - x1, y2 - y1),
-                    interpolation=cv2.INTER_NEAREST
+                    interpolation=cv2.INTER_AREA
                 )
             except Exception:
 
