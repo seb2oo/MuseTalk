@@ -433,7 +433,8 @@ class Avatar:
     ):
 
         print(video_len)
-
+        time_resize_astype = 0.0
+        time_resize_cv2 = 0.0
         time_queue = 0.0
         time_copy = 0.0
         time_resize = 0.0
@@ -595,15 +596,29 @@ class Avatar:
 
             start = time.perf_counter()
 
-            try:
+            # try:
 
-                res_frame = cv2.resize(
-                    res_frame.astype(np.uint8),
-                    (x2 - x1, y2 - y1)
-                )
+            #     res_frame = cv2.resize(
+            #         res_frame.astype(np.uint8),
+            #         (x2 - x1, y2 - y1)
+            #     )
+
+            # except Exception:
+
+            #     continue
+
+            start = time.perf_counter()
+            try:
+                res_frame = res_frame.astype(np.uint8)
+
+                time_resize_astype += time.perf_counter() - start
+
+                start = time.perf_counter()
+                res_frame = cv2.resize(res_frame, (x2 - x1, y2 - y1))
+
+                time_resize_cv2 += time.perf_counter() - start
 
             except Exception:
-
                 continue
 
             time_resize += time.perf_counter() - start
@@ -719,6 +734,10 @@ class Avatar:
 
 
         print(f"FFMPEG TOTAL     : {ffmpeg_total_time:.4f} s")
+
+        print(f"RESIZE ASTYPE    : {time_resize_astype:.4f} s")
+        print(f"RESIZE CV2       : {time_resize_cv2:.4f} s")
+        
         total = (
             time_queue
             + time_copy
