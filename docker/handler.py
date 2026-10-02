@@ -91,17 +91,25 @@ print(f"  {MODELS_DIR}")
 # HELPERS
 # ============================================================
 
+# def run_command(command):
+#     print(f"[COMMAND] {command}")
+
+#     env = os.environ.copy()
+#     env["PYTHONPATH"] = str(PROJECT_DIR) + ":" + env.get("PYTHONPATH", "")
+
+#     subprocess.run(
+#         command,
+#         shell=True,
+#         check=True,
+#         env=env,
+#     )
+
 def run_command(command):
     print(f"[COMMAND] {command}")
 
-    env = os.environ.copy()
-    env["PYTHONPATH"] = str(PROJECT_DIR) + ":" + env.get("PYTHONPATH", "")
-
     subprocess.run(
         command,
-        shell=True,
         check=True,
-        env=env,
     )
 
 # ============================================================
