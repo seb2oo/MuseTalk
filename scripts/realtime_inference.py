@@ -463,8 +463,6 @@ class Avatar:
 
         ffmpeg_process = None
 
-        output_vid_path = None
-
         if output_vid_path is not None:
 
             height, width = self.frame_list_cycle[0].shape[:2]
@@ -641,41 +639,32 @@ class Avatar:
             # 5. SEND FRAME DIRECTLY TO FFMPEG
             # ======================================================
 
-            # if ffmpeg_process is not None:
+            if ffmpeg_process is not None:
 
-            #     start = time.perf_counter()
+                start = time.perf_counter()
 
-            #     try:
+                try:
 
-            #         ffmpeg_process.stdin.write(
-            #             combine_frame.tobytes()
-            #         )
+                    ffmpeg_process.stdin.write(
+                        combine_frame.tobytes()
+                    )
 
-            #     except BrokenPipeError:
+                except BrokenPipeError:
 
-            #         print("ERROR: FFmpeg pipe closed unexpectedly.")
-            #         break
+                    print("ERROR: FFmpeg pipe closed unexpectedly.")
+                    break
 
-            #     finally:
-            #         if original_crop is not None:
-            #             ry1, ry2, rx1, rx2 = restore_coords
+                finally:
+                    if original_crop is not None:
+                        ry1, ry2, rx1, rx2 = restore_coords
 
-            #             combine_frame[
-            #                 ry1:ry2,
-            #                 rx1:rx2
-            #             ] = original_crop
+                        combine_frame[
+                            ry1:ry2,
+                            rx1:rx2
+                        ] = original_crop
 
-            #     time_ffmpeg += time.perf_counter() - start
+                time_ffmpeg += time.perf_counter() - start
 
-            start = time.perf_counter()
-
-            _ = combine_frame.tobytes()
-
-            if original_crop is not None:
-                ry1, ry2, rx1, rx2 = restore_coords
-                combine_frame[ry1:ry2, rx1:rx2] = original_crop
-
-            time_ffmpeg += time.perf_counter() - start
 
             # ======================================================
             # NEXT FRAME
