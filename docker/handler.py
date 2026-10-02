@@ -227,8 +227,8 @@ def bootstrap():
 
     print("2")
     # Make MuseTalk available to this Python process
-    if PROJECT_DIR not in sys.path:
-        sys.path.insert(0, PROJECT_DIR)
+    if str(PROJECT_DIR) not in sys.path:
+        sys.path.insert(0, str(PROJECT_DIR))
 
     # --------------------------------------------------------
     # DOWNLOAD CHECKPOINT
@@ -581,7 +581,8 @@ handler.py
 
 
 ## import GENERAL, DONC EXECUTION DE CE FICHIER SANS FAIRE LE IF NAME = MAIN .. ETC ...
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.chdir(PROJECT_DIR)
 from scripts import realtime_inference
 
 from scripts.realtime_inference import fast_check_ffmpeg
@@ -611,8 +612,8 @@ args = argparse.Namespace(
     ffmpeg_path="./ffmpeg-4.4-amd64-static/",
     gpu_id=0,
     vae_type="sd-vae",
-    unet_config="./models/musetalk/musetalk.json",
-    unet_model_path="./models/musetalk/pytorch_model.bin",
+    unet_config="./models/musetalkV15/musetalk/musetalk.json",
+    unet_model_path="./models/musetalkV15/musetalk/pytorch_model.bin",
     whisper_dir="./models/whisper",
     inference_config="configs/inference/realtime.yaml",
     bbox_shift=0,
