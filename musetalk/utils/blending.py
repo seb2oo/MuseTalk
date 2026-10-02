@@ -7,19 +7,34 @@ import time
 from numba import njit
 
 
+# @njit(cache=True, fastmath=True)
+# def blend_numba(crop16, original16, mask16, blended):
+#     h, w, _ = crop16.shape
+
+#     for y in range(h):
+#         for x in range(w):
+#             m = mask16[y, x]
+#             inv_m = 255 - m
+
+#             for c in range(3):
+#                 blended[y, x, c] = (
+#                     crop16[y, x, c] * m
+#                     + original16[y, x, c] * inv_m
+#                 ) // 255
+
 @njit(cache=True, fastmath=True)
-def blend_numba(crop16, original16, mask16, blended):
-    h, w, _ = crop16.shape
+def blend_numba_inplace(crop, original, mask):
+    h, w, _ = crop.shape
 
     for y in range(h):
         for x in range(w):
-            m = mask16[y, x]
+            m = mask[y, x]
             inv_m = 255 - m
 
             for c in range(3):
-                blended[y, x, c] = (
-                    crop16[y, x, c] * m
-                    + original16[y, x, c] * inv_m
+                crop[y, x, c] = (
+                    crop[y, x, c] * m
+                    + original[y, x, c] * inv_m
                 ) // 255
 
 
@@ -477,44 +492,59 @@ def get_image_blending(
 
     t_blend = time.perf_counter()
 
-    t = time.perf_counter()
-    mask16 = mask_roi.astype(np.uint16)
+
+
+    # t = time.perf_counter()
+
+    # mask16 = mask_roi.astype(np.uint16)
+    # if profile is not None:
+    #     profile["astype_mask"] += time.perf_counter() - t
+
+    # t = time.perf_counter()
+    # crop16 = crop_roi.astype(np.uint16)
+    # if profile is not None:
+    #     profile["astype_crop"] += time.perf_counter() - t
+
+    # t = time.perf_counter()
+    # original16 = original_roi.astype(np.uint16)
+    # if profile is not None:
+    #     profile["astype_original"] += time.perf_counter() - t
+
+    # blended = np.empty_like(crop16, dtype=np.uint16)
+
+    # t = time.perf_counter()
+    # # for c in range(3):
+    # #     blended[:, :, c] = (
+    # #         crop16[:, :, c] * mask16
+    # #         + original16[:, :, c] * (255 - mask16)
+    # #     ) // 255
+
+    # blend_numba(crop16, original16, mask16, blended)
+
+    # if profile is not None:
+    #     profile["math"] += time.perf_counter() - t
+
+    # if profile is not None:
+    #     profile["blend"] += time.perf_counter() - t_blend
+
+
+
+    blend_numba_inplace(
+    crop_roi,
+    original_roi,
+    mask_roi
+    )
+
     if profile is not None:
-        profile["astype_mask"] += time.perf_counter() - t
-
-    t = time.perf_counter()
-    crop16 = crop_roi.astype(np.uint16)
-    if profile is not None:
-        profile["astype_crop"] += time.perf_counter() - t
-
-    t = time.perf_counter()
-    original16 = original_roi.astype(np.uint16)
-    if profile is not None:
-        profile["astype_original"] += time.perf_counter() - t
-
-    blended = np.empty_like(crop16, dtype=np.uint16)
-
-    t = time.perf_counter()
-    # for c in range(3):
-    #     blended[:, :, c] = (
-    #         crop16[:, :, c] * mask16
-    #         + original16[:, :, c] * (255 - mask16)
-    #     ) // 255
-
-    blend_numba(crop16, original16, mask16, blended)
-   
-
-    if profile is not None:
-        profile["math"] += time.perf_counter() - t
+        profile["math"] += time.perf_counter() - t_blend
 
     if profile is not None:
         profile["blend"] += time.perf_counter() - t_blend
 
 
+
+
     t6 = time.perf_counter()
-
-
-
 
 
     # crop[
@@ -544,10 +574,10 @@ def get_image_blending(
 
     t_write_roi_start = time.perf_counter()
 
-    crop[
-        mask_y1:mask_y2,
-        mask_x1:mask_x2
-    ] = blended.astype(np.uint8)
+    # crop[
+    #     mask_y1:mask_y2,
+    #     mask_x1:mask_x2
+    # ] = blended.astype(np.uint8)
 
     t_write_roi_end = time.perf_counter()
 
