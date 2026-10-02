@@ -279,12 +279,15 @@ attention a partir du commit : "improve  process_thread.join()"
 
 *************** OK TOUT CE QUI TOUCHE LE SERVERLESS EST DECRIT CI DESSOUS ****************
 
-Dans la branche : serverless ! et on repart exactement de l'état actuelle !
+Dans la branche : serverless ! et on repart exactement de l'état actuelle (cad depuis la branch realtime-clean) !
 
 git switch -c serverless
 
 git switch realtime-clean
 git switch serverless
+
+git clone --branch serverless https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
+bash /workspace/MuseTalk/docker/setup_after_dockerRun.sh
 
 ***
 git status
@@ -302,3 +305,16 @@ git checkout serverless
 git pull origin serverless
 ***
 
+
+cd MuseTalk
+python -m scripts.realtime_inference \
+--inference_config configs/inference/realtime.yaml \
+--result_dir results/realtime \
+--unet_model_path models/musetalkV15/unet.pth \
+--unet_config models/musetalkV15/musetalk.json \
+--version v15 \
+--fps 25 \
+--batch_size 8 \
+--skip_save_images
+
+python3 -m http.server 8000 --bind 0.0.0.0
