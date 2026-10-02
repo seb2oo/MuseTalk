@@ -7,11 +7,13 @@ from pathlib import Path
 import sys
 from pathlib import Path
 import torch
+import sys
 
 # ==========================================================
 # VARIABLES
 # ==========================================================
 # to test in docker before serverless as is faster : cd /workspace/MuseTalk/docker && python3 handler.py
+# pip install runpod (sera inclue dans la version docker final )
 # git clone --branch serverless https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
 TESTS_IN_DOCKER = True
 
@@ -579,6 +581,7 @@ handler.py
 
 
 ## import GENERAL, DONC EXECUTION DE CE FICHIER SANS FAIRE LE IF NAME = MAIN .. ETC ...
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts import realtime_inference
 
 from scripts.realtime_inference import fast_check_ffmpeg
