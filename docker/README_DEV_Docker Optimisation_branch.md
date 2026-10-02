@@ -213,6 +213,10 @@ ici parler des commandes git pour faire le merge final ! et que si on veut conti
 ************* CI DESSOUS TOUT CE QUI CONCERNE LE MODE  REAL-TIME *************
 
 
+
+git clone --branch realtime-clean https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
+bash /workspace/MuseTalk/docker/setup_after_dockerRun.sh
+
 # MuseTalk 1.5 (Recommended)
 cd MuseTalk
 python -m scripts.realtime_inference \
