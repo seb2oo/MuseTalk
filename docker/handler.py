@@ -10,7 +10,8 @@ from pathlib import Path
 # ==========================================================
 # VARIABLES
 # ==========================================================
-# to test in docker before serverless as is faster : cd workspace\MuseTalk\docker && python3 handler.py
+# to test in docker before serverless as is faster : cd /workspace/MuseTalk/docker && python3 handler.py
+# git clone --branch serverless https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
 TESTS_IN_DOCKER = True
 
 
@@ -94,7 +95,7 @@ def run_command(command):
     print(f"[COMMAND] {command}")
 
     env = os.environ.copy()
-    env["PYTHONPATH"] = PROJECT_DIR + ":" + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = STR(PROJECT_DIR) + ":" + env.get("PYTHONPATH", "")
 
     subprocess.run(
         command,

@@ -77,11 +77,6 @@ RUN echo "========== Python ==========" && \
     echo "========== H264 ==========" && \
     ffmpeg -encoders | grep libx264
 
-# ============================================================
-# SERVERLESS HANDLER
-# ============================================================
-
-COPY dockerfile/handler.py /workspace/handler.py
 
 
 # ----------------------------------------------------------
@@ -89,6 +84,22 @@ COPY dockerfile/handler.py /workspace/handler.py
 # ----------------------------------------------------------
 
 # CMD ["bash"]
+
+
+### ALL FROM HERE IS TO USE THIS IMAGE FOR SERVERLESS ! ALL ABOVE IS FOR "SIMPLE" DOCKER
+### PUT ALL AT THE END ALLOW US TO NOT RE-CREATE THE IMAGE AGAIN AND USE MAXIMUM OF LAYERS
+
+# ============================================================
+# MISSING PACKAGE FOR SERVERLESS
+# ============================================================
+RUN pip install --no-cache-dir runpod
+
+
+# ============================================================
+# SERVERLESS HANDLER
+# ============================================================
+
+COPY dockerfile/handler.py /workspace/handler.py
 
 # ============================================================
 # START SERVERLESS WORKER
