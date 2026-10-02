@@ -594,8 +594,7 @@ class Avatar:
             # 3. RESIZE
             # ======================================================
 
-            start = time.perf_counter()
-
+            # start = time.perf_counter()
             # try:
 
             #     res_frame = cv2.resize(
@@ -606,22 +605,37 @@ class Avatar:
             # except Exception:
 
             #     continue
+            # time_resize += time.perf_counter() - start
+
 
             start = time.perf_counter()
             try:
-                res_frame = res_frame.astype(np.uint8)
-
-                time_resize_astype += time.perf_counter() - start
-
-                start = time.perf_counter()
-                res_frame = cv2.resize(res_frame, (x2 - x1, y2 - y1))
-
-                time_resize_cv2 += time.perf_counter() - start
-
+                res_frame = cv2.resize(
+                    res_frame,
+                    (x2 - x1, y2 - y1),
+                    interpolation=cv2.INTER_NEAREST
+                )
             except Exception:
-                continue
 
+                continue
             time_resize += time.perf_counter() - start
+
+
+            ## to debug
+            # start = time.perf_counter()
+            # try:
+            #     res_frame = res_frame.astype(np.uint8)
+
+            #     time_resize_astype += time.perf_counter() - start
+
+            #     start = time.perf_counter()
+            #     res_frame = cv2.resize(res_frame, (x2 - x1, y2 - y1))
+
+            #     time_resize_cv2 += time.perf_counter() - start
+
+            # except Exception:
+            #     continue
+            # time_resize += time.perf_counter() - start
 
 
             start = time.perf_counter()
@@ -737,7 +751,7 @@ class Avatar:
 
         print(f"RESIZE ASTYPE    : {time_resize_astype:.4f} s")
         print(f"RESIZE CV2       : {time_resize_cv2:.4f} s")
-        
+
         total = (
             time_queue
             + time_copy
