@@ -492,15 +492,17 @@ class Avatar:
                 # VIDEO ENCODING
                 # --------------------------------------------------
 
-                # "-c:v", "libx264",
-                # "-preset", "ultrafast",
-                # "-crf", "18",
-                # "-pix_fmt", "yuv420p",
-
-                "-c:v", "h264_nvenc",
-                "-preset", "p1",
-                "-cq", "18",
+                # encodage CPU
+                "-c:v", "libx264",
+                "-preset", "ultrafast",
+                "-crf", "18",
                 "-pix_fmt", "yuv420p",
+
+                # encodage avec encodeur dedié GPU (n'a pas amelioré)
+                # "-c:v", "h264_nvenc",
+                # "-preset", "p1",
+                # "-cq", "18",
+                # "-pix_fmt", "yuv420p",
 
                 # --------------------------------------------------
                 # AUDIO ENCODING
@@ -516,6 +518,18 @@ class Avatar:
                 "-shortest",
 
                 output_vid_path
+            ]
+            cmd_ffmpeg = [
+                "ffmpeg",
+                "-y",
+                "-v", "warning",
+                "-f", "rawvideo",
+                "-pix_fmt", "bgr24",
+                "-s", f"{width}x{height}",
+                "-r", str(fps),
+                "-i", "-",
+                "-f", "null",
+                "-"
             ]
 
             print("\nStarting FFmpeg:")
