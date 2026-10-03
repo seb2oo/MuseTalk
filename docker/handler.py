@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 import torch
 import sys
+import base64
 
 # ==========================================================
 # VARIABLES
@@ -460,102 +461,6 @@ def bootstrap():
 
 
 
-
-## handler final
-def handler(job):
-
-    """
-    Expected request:
-
-    {
-        "input": {
-            "text": "Bonjour, ceci est un test.",
-            "language": "fr",
-            "reload_anything":false,
-            "del_cache":false
-        }
-    }
-
-    Supported languages:
-        fr = French
-        en = English
-        es = Spanish
-        de = German
-    """
-
-    job_input = job.get(
-        "input",
-        {},
-    )
-
-    text = job_input.get(
-        "text"
-    )
-
-    language = job_input.get(
-        "language"
-    )
-
-    reload = job_input.get(
-            "reload_anything",False
-        )
-
-    del_cache = job_input.get(
-                "del_cache",False
-            )
-    
-
-    if not text:
-
-        raise ValueError(
-            "Missing required input: 'text'"
-        )
-
-    if not language:
-
-        raise ValueError(
-            "Missing required input: 'language'"
-        )
-
-    if not isinstance(reload, bool):
-        raise ValueError(
-            "Input 'reload_anything' must be a boolean"
-        )
-
-    if not isinstance(del_cache, bool):
-        raise ValueError(
-            "Input 'del_cache' must be a boolean"
-        )
-    
-    
-    if reload:
-        pull_git()
-    ## deleted at the end is better
-    # if del_cache:
-    #     print("cache is erased")
-    #     run_command("rm -rf /runpod-volume/torchinductor-cache/*")
-    #     cache_diagnostics()
-
-
-    return {}
-
-
-# ============================================================
-# START RUNPOD SERVERLESS
-# ============================================================
-
-if not TESTS_IN_DOCKER:
-    if __name__ == "__main__":
-
-        runpod.serverless.start(
-            {
-                "handler": handler
-            }
-        )
-
-
-
-print("TEST BOOTSTRAP")
 bootstrap()
 
 
@@ -710,34 +615,135 @@ print(inference_config)
 log_time("XXXYYY after interference config")# OK
 
 
-##
+## TOUTE CETTE PARTIE ICI VA ÊTRE GERER DANS LE HANDLER MNT
+# for avatar_id in inference_config:
+#     data_preparation = inference_config[avatar_id]["preparation"]
+#     log_time("XXXYYY after data preparation") # OK
+#     video_path = inference_config[avatar_id]["video_path"]
+#     log_time("XXXYYY after video_path")# OK
+#     if args.version == "v15":
+#         bbox_shift = 0
+#     else:
+#         bbox_shift = inference_config[avatar_id]["bbox_shift"]
+#     avatar = Avatar(
+#         avatar_id=avatar_id,
+#         video_path=video_path,
+#         bbox_shift=bbox_shift,
+#         batch_size=args.batch_size,
+#         preparation=data_preparation)
+#     log_time("XXXYYY after Avatar, reading image ?") # NOK, has reading images two times ...
 
+#     audio_clips = inference_config[avatar_id]["audio_clips"]
+#     for audio_num, audio_path in audio_clips.items():
+#         print("Inferring using:", audio_path)
+#         avatar.inference(audio_path,
+#                         audio_num,
+#                         args.fps,
+#                         args.skip_save_images)
+#     log_time("XXXYYY after avatar inference")
+
+
+## ATTENTION SI :D:\Dev\04_MuseTalkImprovement\MuseTalk\configs\inference\realtime.yaml est a False ou True alors soit ca passe, soit ca casse
+## etant donne que ca ne s'execute que une fois il faut que realtime.yaml soit a True Mais que l'avatar.pt existe deja
+## donc placer le avatar.pt deja dnas le bon dossier 
 for avatar_id in inference_config:
     data_preparation = inference_config[avatar_id]["preparation"]
-    log_time("XXXYYY after data preparation") # OK
+    log_time("XXXYYY after data preparation")
+
     video_path = inference_config[avatar_id]["video_path"]
-    log_time("XXXYYY after video_path")# OK
+    log_time("XXXYYY after video_path")
+
     if args.version == "v15":
         bbox_shift = 0
     else:
         bbox_shift = inference_config[avatar_id]["bbox_shift"]
+
     avatar = Avatar(
         avatar_id=avatar_id,
         video_path=video_path,
         bbox_shift=bbox_shift,
         batch_size=args.batch_size,
-        preparation=data_preparation)
-    log_time("XXXYYY after Avatar, reading image ?") # NOK, has reading images two times ...
+        preparation=data_preparation
+    )
 
-    audio_clips = inference_config[avatar_id]["audio_clips"]
-    for audio_num, audio_path in audio_clips.items():
-        print("Inferring using:", audio_path)
-        avatar.inference(audio_path,
-                        audio_num,
-                        args.fps,
-                        args.skip_save_images)
+    log_time("XXXYYY after Avatar, reading image ?")
+
+
+
+
+
+## handler final
+def handler(job):
+    """
+    Reçoit un job RunPod contenant le chemin de l'audio.
+    Tous les modèles et l'Avatar sont déjà chargés en mémoire.
+    """
+
+    job_input = job.get("input", {})
+    audio_path = job_input.get("audio_path")
+
+    if not audio_path:
+        return {
+            "error": "Missing 'audio_path' in job input"
+        }
+
+    print(f"[HANDLER] Inferring using: {audio_path}")
+
+    # On utilise l'avatar déjà initialisé au démarrage
+    audio_num = job_input.get("audio_num", 0)
+
+    avatar.inference(
+        audio_path,
+        audio_num,
+        args.fps,
+        args.skip_save_images
+    )
+
     log_time("XXXYYY after avatar inference")
 
+    output_path = "/workspace/MuseTalk/results/v15/avatars/<avatar_id>/vid_output/0.mp4"
+
+    if not os.path.exists(output_path):
+        return {
+            "status": "error",
+            "message": f"Video not found: {output_path}"
+        }
+
+    with open(output_path, "rb") as f:
+        video_bytes = f.read()
+
+    video_base64 = base64.b64encode(video_bytes).decode("utf-8")
+
+
+
+    return {
+        "status": "completed",
+        "audio_path": audio_path,
+        "audio_num": audio_num,
+        "video_base64": video_base64,
+    }
+
+
+# ============================================================
+# START RUNPOD SERVERLESS
+# ============================================================
+
+if not TESTS_IN_DOCKER:
+    if __name__ == "__main__":
+
+        runpod.serverless.start(
+            {
+                "handler": handler
+            }
+        )
+
+
+# {
+#   "input": {
+#     "audio_path": "/workspace/MuseTalk/data/audio/seb_audio.wav",
+#     "audio_num": 0
+#   }
+# }
 
 
 
