@@ -644,8 +644,11 @@ log_time("XXXYYY after interference config")# OK
 
 
 ## ATTENTION SI :D:\Dev\04_MuseTalkImprovement\MuseTalk\configs\inference\realtime.yaml est a False ou True alors soit ca passe, soit ca casse
-## etant donne que ca ne s'execute que une fois il faut que realtime.yaml soit a True Mais que l'avatar.pt existe deja
-## donc placer le avatar.pt deja dnas le bon dossier 
+## etant donne que ca ne s'execute que une fois il faut que realtime.yaml soit a False Mais que l'avatar.pt existe deja
+## donc placer le avatar.pt deja dnas le bon dossier , basé sur realtime.yaml, il faudrait le placé là :
+## MuseTalk/results/v15/avatars/avator_1/avatar_cache.pt et d'après ce que je vois dans realtime_inference.py il faudrait aussi placer le fichier .json
+
+## GROS PROBLEME GIT NE SUPPORTE QUE 1OOMB DE FILE SIZE ! LE.PT FAIT PRESQUE 1GB ! IL VA DONC FALLOIR UTILISE RUNPOD VOLUME
 for avatar_id in inference_config:
     data_preparation = inference_config[avatar_id]["preparation"]
     log_time("XXXYYY after data preparation")
@@ -669,7 +672,7 @@ for avatar_id in inference_config:
     log_time("XXXYYY after Avatar, reading image ?")
 
 
-
+print("ok we are good !")
 
 
 ## handler final
@@ -701,7 +704,8 @@ def handler(job):
 
     log_time("XXXYYY after avatar inference")
 
-    output_path = "/workspace/MuseTalk/results/v15/avatars/<avatar_id>/vid_output/0.mp4"
+    output_path = "/workspace/MuseTalk/results/v15/avatars/avator_1/vid_output/audio_1.mp4"
+
 
     if not os.path.exists(output_path):
         return {
@@ -713,8 +717,6 @@ def handler(job):
         video_bytes = f.read()
 
     video_base64 = base64.b64encode(video_bytes).decode("utf-8")
-
-
 
     return {
         "status": "completed",
@@ -728,14 +730,14 @@ def handler(job):
 # START RUNPOD SERVERLESS
 # ============================================================
 
-if not TESTS_IN_DOCKER:
-    if __name__ == "__main__":
+# if not TESTS_IN_DOCKER:
+#     if __name__ == "__main__":
 
-        runpod.serverless.start(
-            {
-                "handler": handler
-            }
-        )
+#         runpod.serverless.start(
+#             {
+#                 "handler": handler
+#             }
+#         )
 
 
 # {
