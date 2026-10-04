@@ -17,7 +17,7 @@ logging.basicConfig(
     force=True,
 )
 
-
+## APPAREMENT LE LOGGER PANEL DE SERVERLESS FONCTIONNE BIEN AVEC "INFO" MAIS PAS AVEC "DEBUG"
 logger = logging.getLogger("musetalk")
 
 
@@ -171,6 +171,9 @@ if USE_CACHE_MODEL :
 
 def bootstrap():
 
+    global unet_config
+    global unet_model_path
+
     logger.info("Starting MuseTalk bootstrap")
 
 
@@ -206,7 +209,7 @@ def bootstrap():
 
     if USE_CACHE_MODEL:
 
-        logger.debug(f"Using cached MuseTalk model from: {MUSE_TALK_CACHE_PATH}")
+        logger.info(f"Using cached MuseTalk model from: {MUSE_TALK_CACHE_PATH}")
 
 
         unet_config=str(
@@ -221,11 +224,11 @@ def bootstrap():
             / "pytorch_model.bin"
         )
 
-        logger.debug(f"UNET CONFIG: {unet_config}")
-        logger.debug(f"UNET CONFIG EXISTS: {os.path.exists(unet_config)}")
+        logger.info(f"UNET CONFIG: {unet_config}")
+        logger.info(f"UNET CONFIG EXISTS: {os.path.exists(unet_config)}")
 
-        logger.debug(f"UNET MODEL: {unet_model_path}")
-        logger.debug(f"UNET MODEL EXISTS: {os.path.exists(unet_model_path)}")
+        logger.info(f"UNET MODEL: {unet_model_path}")
+        logger.info(f"UNET MODEL EXISTS: {os.path.exists(unet_model_path)}")
 
         logger.debug("Using MuseTalk model directly from the RunPod cache")
     else:
@@ -539,6 +542,13 @@ realtime_inference.fp = fp
 inference_config = OmegaConf.load(args.inference_config)
 logger.debug(f"Inference config loaded from: {args.inference_config}")
 log_time("After inference config loading")    
+
+avatar_dir = PROJECT_DIR / "results" / "v15" / "avatars" / "avatar_1"
+
+logger.info(f"Avatar directory: {avatar_dir}")
+logger.info(f"Avatar directory exists: {avatar_dir.exists()}")
+logger.info(f"avatar_cache.pt exists: {(avatar_dir / 'avatar_cache.pt').exists()}")
+logger.info(f"avatar_info.json exists: {(avatar_dir / 'avatar_info.json').exists()}")
 
 
 for avatar_id in inference_config:

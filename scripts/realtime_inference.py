@@ -80,7 +80,7 @@ class Avatar:
         self.video_out_path = f"{self.avatar_path}/vid_output/"
         self.mask_out_path = f"{self.avatar_path}/mask"
         self.mask_coords_path = f"{self.avatar_path}/mask_coords.pkl"
-        self.avatar_info_path = f"{self.avatar_path}/avator_info.json"
+        self.avatar_info_path = f"{self.avatar_path}/avatar_info.json"
         self.avatar_info = {
             "avatar_id": avatar_id,
             "video_path": video_path,
