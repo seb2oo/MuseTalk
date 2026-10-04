@@ -328,6 +328,17 @@ handler[bkp].py --> code fonctionnel mais polluant trop le log du serverless ! C
 cette ligne la de realtime_inference :     self.avatar_info_path = f"{self.avatar_path}/avatar_info.json" a été cahngé car avant c'était :     self.avatar_info_path = f"{self.avatar_path}/avator_info.json"
 avatOr à la place de avatAr.. et ça porte a confusion... D'ailleurs le script realtime.yamlmdoit aussi être changé en conséquences 
 
-le deux print ci-dessous on été mis en commentaire car sous serverlees ça pollue beauoup trop ! 
+le deux print ci-dessous on été mis en commentaire car sous serverlees ça pollue beauoup trop (dans vae.py) ! 
 print(f"VAE POST + CPU : {t3 - t2:.4f}s")
 print(f"VAE DECODE GPU : {t1 - t0:.4f}s")
+
+et mnt dans blending.py, j'ai rajouté ceci (car pollue la sortie serverless mais pas celle de docker quand j'ai testé....) : 
+import os
+# Silence Numba compiler debug output
+os.environ["NUMBA_DEBUG"] = "0"
+os.environ["NUMBA_DEBUG_FRONTEND"] = "0"
+os.environ["NUMBA_DUMP_BYTECODE"] = "0"
+os.environ["NUMBA_DUMP_CFG"] = "0"
+os.environ["NUMBA_DUMP_IR"] = "0"
+os.environ["NUMBA_DUMP_LLVM"] = "0"
+os.environ["NUMBA_DUMP_ASSEMBLY"] = "0"

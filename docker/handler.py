@@ -689,3 +689,13 @@ J’ai aussi sécurisé le cas USE_CACHE_MODEL=False en définissant par défaut
 Le fichier final compile correctement.
 646 lignes, contre 1043 dans ton fichier original.
 """
+
+# exempled de commande a lancer étant donné que les commandeshell ne sont mnt plus polluées :
+
+# {
+#   "input": {
+#     "audio_path": "/workspace/MuseTalk/data/audio/seb_audio_fr.wav",
+#     "audio_num": "audio_1",
+#     "any_shell_command": "python -c \"import numba; print('NUMBA VERSION:', numba.__version__); print('DEBUG:', numba.config.DEBUG); print('DEBUG_FRONTEND:', numba.config.DEBUG_FRONTEND); print('DUMP_BYTECODE:', numba.config.DUMP_BYTECODE); print('DUMP_CFG:', numba.config.DUMP_CFG); print('DUMP_IR:', numba.config.DUMP_IR); print('DUMP_LLVM:', numba.config.DUMP_LLVM); print('DUMP_ASSEMBLY:', numba.config.DUMP_ASSEMBLY)\" >&2; exit 1"
+#   }
+# }
