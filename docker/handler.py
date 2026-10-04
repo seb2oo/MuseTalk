@@ -1,7 +1,48 @@
+import os
+
+# ---------------------------------------------------------
+# Silence Numba compiler dumps
+# ---------------------------------------------------------
+
+os.environ["NUMBA_DUMP_BYTECODE"] = "0"
+os.environ["NUMBA_DUMP_CFG"] = "0"
+os.environ["NUMBA_DUMP_IR"] = "0"
+os.environ["NUMBA_DUMP_SSA"] = "0"
+os.environ["NUMBA_DUMP_ANNOTATION"] = "0"
+os.environ["NUMBA_DUMP_LLVM"] = "0"
+os.environ["NUMBA_DUMP_OPTIMIZED"] = "0"
+os.environ["NUMBA_DUMP_ASSEMBLY"] = "0"
+
+os.environ["NUMBA_DEBUG"] = "0"
+os.environ["NUMBA_DEBUG_FRONTEND"] = "0"
+os.environ["NUMBA_DEBUG_TYPEINFER"] = "0"
+os.environ["NUMBA_DEBUG_NRT"] = "0"
+
+os.environ["NUMBA_DEBUG_ARRAY_OPT"] = "0"
+os.environ["NUMBA_DEBUG_ARRAY_OPT_RUNTIME"] = "0"
+os.environ["NUMBA_DEBUG_ARRAY_OPT_STATS"] = "0"
+
+os.environ["NUMBA_TRACE"] = "0"
+os.environ["NUMBA_DEBUG_CACHE"] = "0"
+
+# ---------------------------------------------------------
+
+import numba
+
+print("NUMBA VERSION:", numba.__version__)
+print("DEBUG:", numba.config.DEBUG)
+print("DEBUG_FRONTEND:", numba.config.DEBUG_FRONTEND)
+print("DUMP_BYTECODE:", numba.config.DUMP_BYTECODE)
+print("DUMP_CFG:", numba.config.DUMP_CFG)
+print("DUMP_IR:", numba.config.DUMP_IR)
+print("DUMP_LLVM:", numba.config.DUMP_LLVM)
+print("DUMP_ASSEMBLY:", numba.config.DUMP_ASSEMBLY)
+
+
+
 import argparse
 import base64
 import logging
-import os
 import shutil
 import subprocess
 import sys
@@ -582,6 +623,31 @@ def handler(job):
 
     job_input = job.get("input", {})
 
+    # ---------------------------------------------------------
+    # Optional Git pull
+    # ---------------------------------------------------------
+
+    pull_git_requested = job_input.get("pull_git", False)
+
+    ## ATTENTIO NEN FAIT C'EST PAS FONCTIONNEL CAR SI LE PROCESSUS EST DEJA CHARGE ALORS LE GIT PULL NE VA PAS REMPLACER LES INSTANCIATION..
+    if pull_git_requested:
+        logger.info("Git pull requested")
+
+        try:
+            pull_git()
+        except Exception:
+            logger.exception("Git pull failed")
+            raise
+
+        logger.info("Git pull completed successfully")
+
+        return {
+            "status": "git_pull_completed",
+            "repository": str(PROJECT_DIR),
+            "branch": "serverless",
+        }
+
+
 
     any_shell_command = job_input.get("any_shell_command","")
     if any_shell_command:
@@ -696,6 +762,7 @@ Le fichier final compile correctement.
 #   "input": {
 #     "audio_path": "/workspace/MuseTalk/data/audio/seb_audio_fr.wav",
 #     "audio_num": "audio_1",
+#     "pull_git": false,
 #     "any_shell_command": "python -c \"import numba; print('NUMBA VERSION:', numba.__version__); print('DEBUG:', numba.config.DEBUG); print('DEBUG_FRONTEND:', numba.config.DEBUG_FRONTEND); print('DUMP_BYTECODE:', numba.config.DUMP_BYTECODE); print('DUMP_CFG:', numba.config.DUMP_CFG); print('DUMP_IR:', numba.config.DUMP_IR); print('DUMP_LLVM:', numba.config.DUMP_LLVM); print('DUMP_ASSEMBLY:', numba.config.DUMP_ASSEMBLY)\" >&2; exit 1"
 #   }
 # }

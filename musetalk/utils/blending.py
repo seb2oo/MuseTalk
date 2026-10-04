@@ -4,16 +4,6 @@ import cv2
 import copy
 import time
 import os
-
-# Silence Numba compiler debug output
-os.environ["NUMBA_DEBUG"] = "0"
-os.environ["NUMBA_DEBUG_FRONTEND"] = "0"
-os.environ["NUMBA_DUMP_BYTECODE"] = "0"
-os.environ["NUMBA_DUMP_CFG"] = "0"
-os.environ["NUMBA_DUMP_IR"] = "0"
-os.environ["NUMBA_DUMP_LLVM"] = "0"
-os.environ["NUMBA_DUMP_ASSEMBLY"] = "0"
-
 from numba import njit
 
 
