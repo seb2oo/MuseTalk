@@ -9,14 +9,79 @@ from pathlib import Path
 import torch
 import sys
 import base64
+import shutil
+
+
+
+import logging
+
+
+## WITH SERVERLESS THIS IS SELECTIONNABLE ON THE PANEL SCREEN
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+
+logger = logging.getLogger("musetalk")
+
+print("XXX 1 - handler.py started")
+logger.debug("XXX 1 - handler.py started")
+
+
+# ==========================================================
+# COPY AVATAR FROM VOLUME RUNPOD TO WORKSPACE
+## FINALEMENT ON NE LE FAIT PAS CAR ON VA AJOUTER LE CACHE.PT DIRECTEMENT DANS L'IMAGE ... MAIS ATENTION CECI PEUT AUSSI RALENTIR LE
+## TEMPS DE CHARGEMENT DU DOCKER ... A VOIR ...
+## ET CA NOUS EVITE AUSSI LE FAIT DE FAIRE UN CODE QUI CREE ET STOCKE LE AVATAR.PT UNE FOIS EN CACHE 
+# ==========================================================
+
+# VOLUME_DIR = "/runpod-volume"
+
+# AVATAR_DIR = (
+#     "/workspace/MuseTalk/results/v15/avatars/avatar_1"
+# )
+
+# os.makedirs(AVATAR_DIR, exist_ok=True)
+
+# for filename in [
+#     "avatar_cache.pt",
+#     "avatar_info.json",
+# ]:
+#     src = os.path.join(VOLUME_DIR, filename)
+#     dst = os.path.join(AVATAR_DIR, filename)
+
+#     if not os.path.exists(src):
+#         raise FileNotFoundError(
+#             f"Missing avatar file on RunPod Volume: {src}"
+#         )
+
+#     print(f"Copying {src} -> {dst}")
+
+#     shutil.copy2(src, dst)
+
+#     print(
+#         f"Copied {filename}: "
+#         f"{os.path.getsize(dst) / (1024**2):.2f} MB"
+#     )
+
+# print("Avatar files copied successfully.")
 
 # ==========================================================
 # VARIABLES
 # ==========================================================
+
 # to test in docker before serverless as is faster : cd /workspace/MuseTalk/docker && python3 handler.py
 # pip install runpod (sera inclue dans la version docker final )
 # git clone --branch serverless https://github.com/seb2oo/MuseTalk.git /workspace/MuseTalk
-TESTS_IN_DOCKER = True
+
+# if False means : serverless
+# if True means : Docker (for internal test before serverless deployment)
+TESTS_IN_DOCKER = False
+
+if TESTS_IN_DOCKER:
+    USE_CACHE_MODEL = False
+else:
+    USE_CACHE_MODEL = True
 
 
 # ==========================================================
@@ -117,6 +182,15 @@ def run_command(command):
         check=True,
     )
 
+def run_command2(command):
+    print(f"[COMMAND] {command}")
+
+    subprocess.run(
+        command,
+        shell=True,
+        check=True,
+    )
+
 # ============================================================
 # PULL GIT
 # ============================================================
@@ -169,7 +243,9 @@ def find_cached_model(model_id):
 
     return snapshots[0]
 
-if not TESTS_IN_DOCKER :
+print("XXX 2 - before HF cache lookup")
+
+if USE_CACHE_MODEL :
     MUSE_TALK_CACHE_PATH = find_cached_model(
         MUSE_TALK_MODEL_ID
     )
@@ -205,13 +281,13 @@ def bootstrap():
                 f"Removing incomplete directory: {PROJECT_DIR}"
             )
 
-            run_command(
+            run_command2(
                 f"rm -rf '{PROJECT_DIR}'"
             )
 
         print("Cloning MuseTalk repository...")
 
-        run_command(
+        run_command2(
             "git clone -b serverless "
             "https://github.com/seb2oo/MuseTalk.git "
             f"'{PROJECT_DIR}'"
@@ -235,18 +311,38 @@ def bootstrap():
     # DOWNLOAD CHECKPOINT
     # --------------------------------------------------------
 
-    if not TESTS_IN_DOCKER:
+    if USE_CACHE_MODEL:
   
         DESTINATION = MODELS_DIR
 
         print(f"Copying MuseTalk model to: {DESTINATION}")
 
         # can take time.. to monitor and in other case we give the CHECKPOINT_PATH direytly to the code if possible ie : unet_model_path = Path(CHECKPOINT_PATH) / "musetalkV15" / "unet.pth"
-        shutil.copytree(
-            MUSE_TALK_CACHE_PATH,
-            DESTINATION,
-            dirs_exist_ok=True
+        ## et effectivement c'est possible si on regarde le code plus bas  : unet_model_path="./models/musetalkV15/musetalk/pytorch_model.bin",
+        ## et jsutement on ne va pas faire le shuttil car prend trop de temsp 
+        # shutil.copytree(
+        #     MUSE_TALK_CACHE_PATH,
+        #     DESTINATION,
+        #     dirs_exist_ok=True
+        # )
+
+        unet_config=str(
+        MUSE_TALK_CACHE_PATH
+        / "musetalk"
+        / "musetalk.json"
         )
+
+        unet_model_path=str(
+            MUSE_TALK_CACHE_PATH
+            / "musetalk"
+            / "pytorch_model.bin"
+        )
+
+        print("UNET CONFIG:", unet_config)
+        print("UNET CONFIG EXISTS:", os.path.exists(unet_config))
+
+        print("UNET MODEL:", unet_model_path)
+        print("UNET MODEL EXISTS:", os.path.exists(unet_model_path))
 
         print("MuseTalk model copied successfully.")
     else:
@@ -458,11 +554,58 @@ def bootstrap():
     print("Models are located in:")
     print(f"  {MODELS_DIR}")
 
-
-
-
+print("XXX 3 - before bootstrap()")
 bootstrap()
 
+# ==========================================================
+# ADDING CACHE
+# ==========================================================
+
+
+CACHE_SOURCE = "/workspace/avatar_cache"
+MUSE_TALK_PATH = "/workspace/MuseTalk"
+AVATAR_PATH = os.path.join(
+    MUSE_TALK_PATH,
+    "results",
+    "v15",
+    "avatars",
+    "avatar_1",
+)
+
+os.makedirs(AVATAR_PATH, exist_ok=True)
+
+for filename in ["avatar_cache.pt", "avatar_info.json"]:
+    src = os.path.join(CACHE_SOURCE, filename)
+    dst = os.path.join(AVATAR_PATH, filename)
+
+    shutil.copy2(src, dst)
+
+    print(
+        f"Copied {filename}: "
+        f"{os.path.getsize(dst) / (1024**2):.2f} MB"
+    )
+
+
+
+
+# ==========================================================
+# S'ASSURER QUE LE FICHIER REALTIME EST BIEN EN PREPARATION FALSE ETANT DONNE QUE LAVATAR.PT EST DEJA DANS L'IMAGE
+# ==========================================================
+
+yaml_path = "/workspace/MuseTalk/configs/inference/realtime.yaml"
+
+with open(yaml_path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+content = content.replace(
+    "preparation: True",
+    "preparation: False"
+)
+
+with open(yaml_path, "w", encoding="utf-8") as f:
+    f.write(content)
+
+print("realtime.yaml: preparation set to False")
 
 
 """
@@ -512,13 +655,16 @@ realtime_inference.T0 = time.perf_counter()
 
 import argparse
 
+# os.chdir a fait que ce chemins sont valides !
 args = argparse.Namespace(
     version="v15",
     ffmpeg_path="./ffmpeg-4.4-amd64-static/",
     gpu_id=0,
     vae_type="sd-vae",
-    unet_config="./models/musetalkV15/musetalk/musetalk.json",
-    unet_model_path="./models/musetalkV15/musetalk/pytorch_model.bin",
+    # unet_config="./models/musetalkV15/musetalk/musetalk.json",
+    # unet_model_path="./models/musetalkV15/musetalk/pytorch_model.bin",
+    unet_config=unet_config,
+    unet_model_path = unet_model_path,
     whisper_dir="./models/whisper",
     inference_config="configs/inference/realtime.yaml",
     bbox_shift=0,
@@ -615,7 +761,7 @@ print(inference_config)
 log_time("XXXYYY after interference config")# OK
 
 
-## TOUTE CETTE PARTIE ICI VA ÊTRE GERER DANS LE HANDLER MNT
+## TOUTE CETTE PARTIE ICI VA ÊTRE GERER DANS LE HANDLER MNT (OU EN TOUT CAS UNE PARTIE)
 # for avatar_id in inference_config:
 #     data_preparation = inference_config[avatar_id]["preparation"]
 #     log_time("XXXYYY after data preparation") # OK
@@ -646,9 +792,11 @@ log_time("XXXYYY after interference config")# OK
 ## ATTENTION SI :D:\Dev\04_MuseTalkImprovement\MuseTalk\configs\inference\realtime.yaml est a False ou True alors soit ca passe, soit ca casse
 ## etant donne que ca ne s'execute que une fois il faut que realtime.yaml soit a False Mais que l'avatar.pt existe deja
 ## donc placer le avatar.pt deja dnas le bon dossier , basé sur realtime.yaml, il faudrait le placé là :
-## MuseTalk/results/v15/avatars/avator_1/avatar_cache.pt et d'après ce que je vois dans realtime_inference.py il faudrait aussi placer le fichier .json
+## MuseTalk/results/v15/avatars/avatar_1/avatar_cache.pt et d'après ce que je vois dans realtime_inference.py il faudrait aussi placer le fichier .json
 
 ## GROS PROBLEME GIT NE SUPPORTE QUE 1OOMB DE FILE SIZE ! LE.PT FAIT PRESQUE 1GB ! IL VA DONC FALLOIR UTILISE RUNPOD VOLUME
+
+
 for avatar_id in inference_config:
     data_preparation = inference_config[avatar_id]["preparation"]
     log_time("XXXYYY after data preparation")
@@ -672,8 +820,7 @@ for avatar_id in inference_config:
     log_time("XXXYYY after Avatar, reading image ?")
 
 
-print("ok we are good !")
-
+print("I SHOULD BE HAPPY")
 
 ## handler final
 def handler(job):
@@ -683,8 +830,23 @@ def handler(job):
     """
 
     job_input = job.get("input", {})
-    audio_path = job_input.get("audio_path")
 
+    # --------------------------------------------------------
+    # Commande shell de test
+    # --------------------------------------------------------
+    any_shell_command = job_input.get("any_shell_command","")
+    if any_shell_command:
+        print(f"[HANDLER] Running shell command: {any_shell_command}")
+
+        run_command2(any_shell_command)
+
+        # On sort immédiatement du handler
+        return {
+            "status": "command_completed",
+            "command": any_shell_command,
+        }
+
+    audio_path = job_input.get("audio_path")
     if not audio_path:
         return {
             "error": "Missing 'audio_path' in job input"
@@ -693,7 +855,8 @@ def handler(job):
     print(f"[HANDLER] Inferring using: {audio_path}")
 
     # On utilise l'avatar déjà initialisé au démarrage
-    audio_num = job_input.get("audio_num", 0)
+    audio_num = job_input.get("audio_num", "audio_1")
+
 
     avatar.inference(
         audio_path,
@@ -704,7 +867,8 @@ def handler(job):
 
     log_time("XXXYYY after avatar inference")
 
-    output_path = "/workspace/MuseTalk/results/v15/avatars/avator_1/vid_output/audio_1.mp4"
+    # "avatar_1 et audio num vienne du fichier realtime.yaml... rendre ca pt plus  solide par la suite serait une bonne idée"
+    output_path = f"/workspace/MuseTalk/results/v15/avatars/avatar_1/vid_output/{audio_num}.mp4"
 
 
     if not os.path.exists(output_path):
@@ -730,25 +894,31 @@ def handler(job):
 # START RUNPOD SERVERLESS
 # ============================================================
 
-# if not TESTS_IN_DOCKER:
-#     if __name__ == "__main__":
+if not TESTS_IN_DOCKER:
+    if __name__ == "__main__":
 
-#         runpod.serverless.start(
-#             {
-#                 "handler": handler
-#             }
-#         )
+        runpod.serverless.start(
+            {
+                "handler": handler
+            }
+        )
 
 
 # {
 #   "input": {
 #     "audio_path": "/workspace/MuseTalk/data/audio/seb_audio.wav",
-#     "audio_num": 0
+#     "audio_num": "audio_1",
+#     "any_shell_command": "ls -lah /workspace/MuseTalk"
 #   }
 # }
 
-
-
+# {
+#   "input": {
+#     "audio_path": "/workspace/MuseTalk/data/audio/seb_audio.wav",
+#     "audio_num": "audio_1",
+#     "any_shell_command": ""
+#   }
+# }
 
 
 

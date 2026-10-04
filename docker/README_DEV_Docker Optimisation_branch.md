@@ -318,3 +318,7 @@ python -m scripts.realtime_inference \
 --skip_save_images
 
 python3 -m http.server 8000 --bind 0.0.0.0
+
+docker build -f docker/Dockerfile -t seb2oo/musetalk_projectv4:serverlessv1 .
+
+docker push seb2oo/musetalk_projectv4:serverlessv1

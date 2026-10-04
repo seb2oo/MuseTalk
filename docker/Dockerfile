@@ -30,12 +30,23 @@ RUN apt-get update && \
 # Installation de FFmpeg
 # ----------------------------------------------------------
 
+## old url no more active ! 
+# RUN wget -O ffmpeg.tar.xz \
+#     https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz && \
+#     tar -xf ffmpeg.tar.xz && \
+#     rm ffmpeg.tar.xz
+
+# ENV FFMPEG_PATH=/workspace/ffmpeg-n7.1-latest-linux64-gpl-7.1
+# ENV PATH=${FFMPEG_PATH}/bin:${PATH}
+
+## to verify if an url is active :  curl.exe -I -L "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz"
+
 RUN wget -O ffmpeg.tar.xz \
-    https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz && \
+    https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz && \
     tar -xf ffmpeg.tar.xz && \
     rm ffmpeg.tar.xz
 
-ENV FFMPEG_PATH=/workspace/ffmpeg-n7.1-latest-linux64-gpl-7.1
+ENV FFMPEG_PATH=/workspace/ffmpeg-n8.1-latest-linux64-gpl-8.1
 ENV PATH=${FFMPEG_PATH}/bin:${PATH}
 
 # ----------------------------------------------------------
@@ -89,6 +100,19 @@ RUN echo "========== Python ==========" && \
 ### ALL FROM HERE IS TO USE THIS IMAGE FOR SERVERLESS ! ALL ABOVE IS FOR "SIMPLE" DOCKER
 ### PUT ALL AT THE END ALLOW US TO NOT RE-CREATE THE IMAGE AGAIN AND USE MAXIMUM OF LAYERS
 
+
+# ============================================================
+# AVATAR CACHE
+# ============================================================
+
+RUN mkdir -p /workspace/avatar_cache
+
+COPY results/v15/avatars/avatar_1/avatar_cache.pt \
+     /workspace/avatar_cache/avatar_cache.pt
+
+COPY results/v15/avatars/avatar_1/avatar_info.json \
+     /workspace/avatar_cache/avatar_info.json
+
 # ============================================================
 # MISSING PACKAGE FOR SERVERLESS
 # ============================================================
@@ -99,7 +123,7 @@ RUN pip install --no-cache-dir runpod
 # SERVERLESS HANDLER
 # ============================================================
 
-COPY dockerfile/handler.py /workspace/handler.py
+COPY docker/handler.py /workspace/handler.py
 
 # ============================================================
 # START SERVERLESS WORKER
