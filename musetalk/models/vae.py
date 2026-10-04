@@ -124,7 +124,7 @@ class VAE():
             torch.cuda.synchronize()
             t1 = time.perf_counter()
 
-            print(f"VAE DECODE GPU : {t1 - t0:.4f}s")
+            # print(f"VAE DECODE GPU : {t1 - t0:.4f}s")
 
             image = (image / 2 + 0.5).clamp(0, 1)
 
@@ -143,7 +143,7 @@ class VAE():
 
             t3 = time.perf_counter()
 
-            print(f"VAE POST + CPU : {t3 - t2:.4f}s")
+            # print(f"VAE POST + CPU : {t3 - t2:.4f}s")
 
             image = image[..., ::-1]
 

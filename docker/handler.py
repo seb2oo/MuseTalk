@@ -17,7 +17,7 @@ logging.basicConfig(
     force=True,
 )
 
-## APPAREMENT LE LOGGER PANEL DE SERVERLESS FONCTIONNE BIEN AVEC "INFO" MAIS PAS AVEC "DEBUG"
+## APPAREMENT LE LOGGER PANEL DE SERVERLESS FONCTIONNE BIEN AVEC "INFO" MAIS PAS AVEC "DEBUG" et en fait même pas sur... mais c'est jolie a voir en tout cas ...
 logger = logging.getLogger("musetalk")
 
 
@@ -632,16 +632,25 @@ def handler(job):
             "message": f"Video not found: {output_path}"
         }
 
-    with open(output_path, "rb") as f:
-        video_bytes = f.read()
+    ## too big create issue to expose it on the API directly
+    # with open(output_path, "rb") as f:
+    #     video_bytes = f.read()
 
-    video_base64 = base64.b64encode(video_bytes).decode("utf-8")
+    # video_base64 = base64.b64encode(video_bytes).decode("utf-8")
+
+    video_size = os.path.getsize(output_path)
+
+    logger.info(f"Video generated successfully: {output_path}")
+    logger.info(f"Video size: {video_size / (1024 * 1024):.2f} MB")
+
 
     return {
         "status": "completed",
         "audio_path": audio_path,
         "audio_num": audio_num,
-        "video_base64": video_base64,
+    #   "video_base64": video_base64,
+        "video_path": output_path,
+        "video_size_bytes": video_size,
     }
 
 

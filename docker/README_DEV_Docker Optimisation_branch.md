@@ -324,3 +324,10 @@ docker build -f docker/Dockerfile -t seb2oo/musetalk_projectv4:serverlessv1 .
 docker push seb2oo/musetalk_projectv4:serverlessv1
 
 handler[bkp].py --> code fonctionnel mais polluant trop le log du serverless ! C'est donc un backup avant de changer en grande son contenu --> handler.py
+
+cette ligne la de realtime_inference :     self.avatar_info_path = f"{self.avatar_path}/avatar_info.json" a été cahngé car avant c'était :     self.avatar_info_path = f"{self.avatar_path}/avator_info.json"
+avatOr à la place de avatAr.. et ça porte a confusion... D'ailleurs le script realtime.yamlmdoit aussi être changé en conséquences 
+
+le deux print ci-dessous on été mis en commentaire car sous serverlees ça pollue beauoup trop ! 
+print(f"VAE POST + CPU : {t3 - t2:.4f}s")
+print(f"VAE DECODE GPU : {t1 - t0:.4f}s")
