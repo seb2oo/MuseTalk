@@ -322,3 +322,5 @@ python3 -m http.server 8000 --bind 0.0.0.0
 docker build -f docker/Dockerfile -t seb2oo/musetalk_projectv4:serverlessv1 .
 
 docker push seb2oo/musetalk_projectv4:serverlessv1
+
+handler[bkp].py --> code fonctionnel mais polluant trop le log du serverless ! C'est donc un backup avant de changer en grande son contenu --> handler.py
