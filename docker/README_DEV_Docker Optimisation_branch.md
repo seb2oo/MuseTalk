@@ -332,13 +332,3 @@ le deux print ci-dessous on été mis en commentaire car sous serverlees ça pol
 print(f"VAE POST + CPU : {t3 - t2:.4f}s")
 print(f"VAE DECODE GPU : {t1 - t0:.4f}s")
 
-et mnt dans blending.py, j'ai rajouté ceci (car pollue la sortie serverless mais pas celle de docker quand j'ai testé....) : 
-import os
-# Silence Numba compiler debug output
-os.environ["NUMBA_DEBUG"] = "0"
-os.environ["NUMBA_DEBUG_FRONTEND"] = "0"
-os.environ["NUMBA_DUMP_BYTECODE"] = "0"
-os.environ["NUMBA_DUMP_CFG"] = "0"
-os.environ["NUMBA_DUMP_IR"] = "0"
-os.environ["NUMBA_DUMP_LLVM"] = "0"
-os.environ["NUMBA_DUMP_ASSEMBLY"] = "0"

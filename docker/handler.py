@@ -1,45 +1,4 @@
 import os
-
-# ---------------------------------------------------------
-# Silence Numba compiler dumps
-# ---------------------------------------------------------
-
-os.environ["NUMBA_DUMP_BYTECODE"] = "0"
-os.environ["NUMBA_DUMP_CFG"] = "0"
-os.environ["NUMBA_DUMP_IR"] = "0"
-os.environ["NUMBA_DUMP_SSA"] = "0"
-os.environ["NUMBA_DUMP_ANNOTATION"] = "0"
-os.environ["NUMBA_DUMP_LLVM"] = "0"
-os.environ["NUMBA_DUMP_OPTIMIZED"] = "0"
-os.environ["NUMBA_DUMP_ASSEMBLY"] = "0"
-
-os.environ["NUMBA_DEBUG"] = "0"
-os.environ["NUMBA_DEBUG_FRONTEND"] = "0"
-os.environ["NUMBA_DEBUG_TYPEINFER"] = "0"
-os.environ["NUMBA_DEBUG_NRT"] = "0"
-
-os.environ["NUMBA_DEBUG_ARRAY_OPT"] = "0"
-os.environ["NUMBA_DEBUG_ARRAY_OPT_RUNTIME"] = "0"
-os.environ["NUMBA_DEBUG_ARRAY_OPT_STATS"] = "0"
-
-os.environ["NUMBA_TRACE"] = "0"
-os.environ["NUMBA_DEBUG_CACHE"] = "0"
-
-# ---------------------------------------------------------
-
-import numba
-
-print("NUMBA VERSION:", numba.__version__)
-print("DEBUG:", numba.config.DEBUG)
-print("DEBUG_FRONTEND:", numba.config.DEBUG_FRONTEND)
-print("DUMP_BYTECODE:", numba.config.DUMP_BYTECODE)
-print("DUMP_CFG:", numba.config.DUMP_CFG)
-print("DUMP_IR:", numba.config.DUMP_IR)
-print("DUMP_LLVM:", numba.config.DUMP_LLVM)
-print("DUMP_ASSEMBLY:", numba.config.DUMP_ASSEMBLY)
-
-
-
 import argparse
 import base64
 import logging
@@ -47,7 +6,12 @@ import shutil
 import subprocess
 import sys
 import time
+warmup_time = time.perf_counter()
+
 from pathlib import Path
+
+import boto3
+from botocore.config import Config
 
 import runpod
 import torch
@@ -167,6 +131,71 @@ def pull_git():
     run_command2(
         f"cd '{PROJECT_DIR}' && git pull origin serverless"
     )
+
+# def upload_video_to_s3(video_path):
+#     bucket = os.environ["S3_BUCKET"]
+#     region = os.environ["S3_REGION"]
+#     endpoint = os.environ["S3_ENDPOINT"]
+
+#     s3 = boto3.client(
+#         "s3",
+#         aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+#         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+#         region_name=region,
+#         endpoint_url=endpoint,
+#         config=Config(signature_version="s3v4"),
+#     )
+
+#     key = f"musetalk/{os.path.basename(video_path)}"
+
+#     s3.upload_file(
+#         video_path,
+#         bucket,
+#         key,
+#         ExtraArgs={
+#             "ContentType": "video/mp4"
+#         },
+#     )
+
+#     # ne fonctionne pas avec la methode essayé et mnt en commentaire dans "museTalk_inference.ipynb"
+#     url = s3.generate_presigned_url(
+#         "get_object",
+#         Params={
+#             "Bucket": bucket,
+#             "Key": key,
+#         },
+#         ExpiresIn=3600,
+#     )
+
+#     return url
+
+
+def upload_video_to_s3(video_path):
+    bucket = os.environ["S3_BUCKET"]
+    region = os.environ["S3_REGION"]
+    endpoint = os.environ["S3_ENDPOINT"]
+
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        region_name=region,
+        endpoint_url=endpoint,
+        config=Config(signature_version="s3v4"),
+    )
+
+    key = f"musetalk/{os.path.basename(video_path)}"
+
+    s3.upload_file(
+        video_path,
+        bucket,
+        key,
+        ExtraArgs={
+            "ContentType": "video/mp4"
+        },
+    )
+
+    return key
 
 
 def find_cached_model(model_id):
@@ -624,6 +653,18 @@ def handler(job):
     job_input = job.get("input", {})
 
     # ---------------------------------------------------------
+    # Warmup (value only valid for first startup ! it is just for information, debugging)
+    ## CAREFULL IS NOT REALLY THE WARMUP TIME BECAUSE WE DISCOVER INFERENCE STILL MAKE SOME LAZY WARMUP, ETC..
+    # ---------------------------------------------------------
+    warmup_requested = job_input.get("warmup", False)
+    if warmup_requested:
+        return {
+            "status": "warmup_completed",
+            "warmup_time" : (time.perf_counter()-warmup_time)
+        }
+
+
+    # ---------------------------------------------------------
     # Optional Git pull
     # ---------------------------------------------------------
 
@@ -709,6 +750,12 @@ def handler(job):
     logger.info(f"Video generated successfully: {output_path}")
     logger.info(f"Video size: {video_size / (1024 * 1024):.2f} MB")
 
+    # avec la première version de "upload_video_to_s3" qui ne fonctionnait pas
+    # video_url = upload_video_to_s3(output_path)
+
+    s3_key = upload_video_to_s3(output_path)
+    logger.info(f"Video uploaded to S3: {s3_key}")
+
 
     return {
         "status": "completed",
@@ -717,6 +764,9 @@ def handler(job):
     #   "video_base64": video_base64,
         "video_path": output_path,
         "video_size_bytes": video_size,
+        # "video_url": video_url,
+        "s3_bucket": os.environ["S3_BUCKET"],
+        "s3_key": s3_key,
     }
 
 
@@ -763,6 +813,7 @@ Le fichier final compile correctement.
 #     "audio_path": "/workspace/MuseTalk/data/audio/seb_audio_fr.wav",
 #     "audio_num": "audio_1",
 #     "pull_git": false,
-#     "any_shell_command": "python -c \"import numba; print('NUMBA VERSION:', numba.__version__); print('DEBUG:', numba.config.DEBUG); print('DEBUG_FRONTEND:', numba.config.DEBUG_FRONTEND); print('DUMP_BYTECODE:', numba.config.DUMP_BYTECODE); print('DUMP_CFG:', numba.config.DUMP_CFG); print('DUMP_IR:', numba.config.DUMP_IR); print('DUMP_LLVM:', numba.config.DUMP_LLVM); print('DUMP_ASSEMBLY:', numba.config.DUMP_ASSEMBLY)\" >&2; exit 1"
+#     "any_shell_command": "python -c \"import numba; print('NUMBA VERSION:', numba.__version__); print('DEBUG:', numba.config.DEBUG); print('DEBUG_FRONTEND:', numba.config.DEBUG_FRONTEND); print('DUMP_BYTECODE:', numba.config.DUMP_BYTECODE); print('DUMP_CFG:', numba.config.DUMP_CFG); print('DUMP_IR:', numba.config.DUMP_IR); print('DUMP_LLVM:', numba.config.DUMP_LLVM); print('DUMP_ASSEMBLY:', numba.config.DUMP_ASSEMBLY)\" >&2; exit 1",
+#     "warmup": false,
 #   }
 # }

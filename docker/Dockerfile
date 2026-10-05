@@ -126,6 +126,33 @@ RUN pip install --no-cache-dir runpod
 COPY docker/handler.py /workspace/handler.py
 
 # ============================================================
+# # Silence Numba debug output without disabling Numba/JIT ! mais ca ne fonctionne pas !! 
+# ============================================================
+
+ENV NUMBA_DEBUG=0 \
+    NUMBA_DEBUG_FRONTEND=0 \
+    NUMBA_DEBUG_TYPEINFER=0 \
+    NUMBA_DEBUG_NRT=0 \
+    NUMBA_DEBUG_ARRAY_OPT=0 \
+    NUMBA_DEBUG_ARRAY_OPT_RUNTIME=0 \
+    NUMBA_DEBUG_ARRAY_OPT_STATS=0 \
+    NUMBA_DEBUG_CACHE=0 \
+    NUMBA_TRACE=0 \
+    NUMBA_DUMP_BYTECODE=0 \
+    NUMBA_DUMP_CFG=0 \
+    NUMBA_DUMP_IR=0 \
+    NUMBA_DUMP_SSA=0 \
+    NUMBA_DUMP_ANNOTATION=0 \
+    NUMBA_DUMP_LLVM=0 \
+    NUMBA_DUMP_OPTIMIZED=0 \
+    NUMBA_DUMP_ASSEMBLY=0
+
+# ============================================================
+# MISSING PACKAGE FOR SERVERLESS
+# ============================================================
+RUN pip install --no-cache-dir boto3
+
+# ============================================================
 # START SERVERLESS WORKER
 # ============================================================
 
